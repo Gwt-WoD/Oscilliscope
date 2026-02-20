@@ -13,9 +13,12 @@
 #include "ads704x_dma.h"
 
 // Display
-#include "pico-displayDrivs/ili9341/ili9341.h"
-#include "pico-displayDrivs/gfx/gfx.h"
-#include "pico-displayDrivs/gfx/font.h"
+// #include "pico-displayDrivs/ili9341/ili9341.h"
+// #include "pico-displayDrivs/gfx/gfx.h"
+// #include "pico-displayDrivs/gfx/font.h"
+#include "ili9341.h"
+#include "gfx.h"
+#include "font.h"
 
 // Seesaw Driver
 #include "seesaw.h"

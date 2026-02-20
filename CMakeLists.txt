@@ -35,7 +35,7 @@ project(Oscilloscope C CXX ASM)
 add_subdirectory(lib/Overclock)
 add_subdirectory(lib/Seesaw)
 add_subdirectory(lib/ADS704x)
-add_subdirectory(lib/pico-displayDrivs)
+add_subdirectory(lib/DisplayDrivers)
 # include_directories(lib/Overclock) # Header only library
 
 # Include Examples
