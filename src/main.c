@@ -1,24 +1,33 @@
 #include <stdio.h>
-#include "pico/stdlib.h"
-#include "hardware/spi.h"
-#include "hardware/pio.h"
-#include "pico/multicore.h"
 #include "stdlib.h"
 #include "math.h"
 #include "time.h"
+
+// Pico
+#include "pico/stdlib.h"
+#include "pico/multicore.h"
+#include "hardware/spi.h"
+#include "hardware/pio.h"
+
+// ADC
+#include "ads704x_dma.h"
+
+// Display
 #include "pico-displayDrivs/ili9341/ili9341.h"
 #include "pico-displayDrivs/gfx/gfx.h"
 #include "pico-displayDrivs/gfx/font.h"
 
-// SPI Defines
-// We are going to use SPI 0, and allocate it to the following GPIO pins
-// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
-#define SPI_PORT spi0
-#define PIN_RST 16
-#define PIN_CS   17
-#define PIN_SCK  18
-#define PIN_TX 19
-#define PIN_DC 20
+// Seesaw Driver
+#include "seesaw.h"
+
+// Overclocking settings
+#define OVERCLOCKING_ENABLED 1 // Define this before including overclock.h
+#include "overclock.h"
+
+
+#include "pins.h" // Pin mappings
+
+
 
 #include "blink.pio.h"
 
@@ -169,36 +178,49 @@ void DataProcessor(float* VC1, float* VC2, int NS, float VS, float Trigger)
 
 int main()
 {
-    
     //looking for USB connection. Waiting until serial is opened
     stdio_init_all();
     while (!stdio_usb_connected()) {
         sleep_ms(50);
     }
     sleep_ms(1000);
+
+
+    // Overclock core
+    const bool VERBOSE_OVERCLOCK = true;
+    // int ret = overclock_core(OC_PRESETS[OC_FREQ_260], VERBOSE_OVERCLOCK);
+    int ret = overclock_core(OC_PRESETS[OC_FREQ_250], VERBOSE_OVERCLOCK);
+    // int ret = overclock_core(OC_PRESETS[OC_FREQ_200], VERBOSE_OVERCLOCK);
+    // int ret = overclock_core(OC_PRESETS[OC_FREQ_125], VERBOSE_OVERCLOCK);
+    if (ret < 0) {
+        printf("Overclocking failed with error code: %d\n", ret);
+        if (ret == OC_ERR_RESUS_OCCURRED) {
+            stdio_init_all();
+            printf("A resus event occurred during overclocking. System has been reset to safe frequency.\n");
+        }
+    } else {
+        printf("Overclocking successful! New frequency: %d kHz\n", ret);
+    }
     
 
     //DEBUG: Srand for if we want to do random stuff
     srand(time(NULL));
 
-    //launch in multicore mode    
-    //multicore_launch_core1(core1_main);
+    // Launch second core
+    // multicore_launch_core1(core1_main);
 
     
+    // Display SPI initialisation
+    spi_init(DISP_SPI, 100*1000*1000); // 100 MHz
+    gpio_set_function(DISP_PIN_RST, GPIO_FUNC_SPI);
+    gpio_set_function(DISP_PIN_CS,  GPIO_FUNC_SIO); // Uhhh... I think this should be GPIO_FUNC_SPI...
+    gpio_set_function(DISP_PIN_SCK, GPIO_FUNC_SPI);
+    gpio_set_function(DISP_PIN_TX,  GPIO_FUNC_SPI);
+    gpio_set_function(DISP_PIN_DC,  GPIO_FUNC_SPI); // And this should be GPIO_FUNC_SIO!
     
-    // SPI initialisation. This example will use SPI at 1MHz.
-    spi_init(SPI_PORT, 100*1000*1000);
-    gpio_set_function(PIN_RST, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
-    gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
-    gpio_set_function(PIN_TX, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_DC, GPIO_FUNC_SPI);
-    
-    // Chip select is active-low, so we'll initialise it to a driven-high state
-    gpio_set_dir(PIN_CS, GPIO_OUT);
-    gpio_put(PIN_CS, 1);
-    // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
-
+    // Chip select is active-low. Reset to high state.
+    gpio_set_dir(DISP_PIN_CS, GPIO_OUT);
+    gpio_put(DISP_PIN_CS, 1);
 
 
     // PIO Blinking example
@@ -207,9 +229,8 @@ int main()
     printf("Loaded program at %d\n", offset);
     blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
     
-    
 
-    //TODO: testing time :)  
+    //TODO: testing time :)
     
     LCD_initDisplay();
     LCD_setRotation(1);

@@ -29,47 +29,19 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 include(pico_sdk_import.cmake)
 
 
-project(TestCode C CXX ASM)
+project(Oscilloscope C CXX ASM)
 
-# Initialise the Raspberry Pi Pico SDK
-pico_sdk_init()
+# Include Libraries
+add_subdirectory(lib/Seesaw)
+add_subdirectory(lib/ADS704x)
+add_subdirectory(lib/Overclock)
+# include_directories(lib/Overclock) # Header only library
 
-# Add executable. Default name is the project name, version 0.1
+# Include Examples
+add_subdirectory(Examples/Seesaw)
+add_subdirectory(Examples/ADS704x)
+add_subdirectory(Examples/Overclock)
 
-add_executable(TestCode TestCode.c )
-
-add_subdirectory(pico-displayDrivs)
-
-pico_set_program_name(TestCode "TestCode")
-pico_set_program_version(TestCode "0.1")
-
-# Generate PIO header
-pico_generate_pio_header(TestCode ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
-
-# Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(TestCode 1)
-pico_enable_stdio_usb(TestCode 1)
-
-# Add the standard library to the build
-target_link_libraries(TestCode
-        pico_stdlib
-        hardware_dma
-        )
-
-# Add the standard include files to the build
-target_include_directories(TestCode PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}
-)
-
-# Add any user requested libraries
-target_link_libraries(TestCode 
-        hardware_spi
-        hardware_pio
-        hardware_dma
-        pico_multicore
-        ili9341
-        gfx
-        )
-
-pico_add_extra_outputs(TestCode)
+# Include Main Code
+add_subdirectory(src)
 
