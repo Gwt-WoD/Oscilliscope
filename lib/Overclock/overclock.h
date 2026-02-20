@@ -79,9 +79,9 @@ void resus_callback(void) {
 	                125 * MHZ,
 	                125 * MHZ);
 
-	// // Reconfigure uart as clocks have changed
-	// stdio_init_all();
-	// printf("Resus event fired\n");
+	// Reconfigure uart as clocks have changed
+	stdio_init_all();
+	printf("Resus event fired\n");
 
 	// // Wait for uart output to finish
 	// uart_default_tx_wait_blocking();
@@ -146,6 +146,17 @@ int32_t overclock_core(OverclockConfig_t config, bool verbose) {
 	}
 
 	return seen_resus ? OC_ERR_RESUS_OCCURRED : (clock_get_hz(clk_sys) / 1000);
+}
+
+
+bool test_resus() {
+	seen_resus = false; // Reset flag
+	clocks_enable_resus(&resus_callback);
+
+	pll_deinit(pll_sys);
+
+	sleep_ms(5);
+	return seen_resus;
 }
 
 

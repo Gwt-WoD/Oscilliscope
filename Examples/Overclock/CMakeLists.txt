@@ -22,6 +22,7 @@ target_include_directories(Overclock-Demo PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(Overclock-Demo
+	Overclock
 )
 
 pico_add_extra_outputs(Overclock-Demo)

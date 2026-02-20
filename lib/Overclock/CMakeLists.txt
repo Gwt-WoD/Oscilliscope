@@ -4,7 +4,7 @@ add_library(Overclock INTERFACE)
 
 
 # Specify the include directories (PUBLIC makes headers available to consumers)
-target_include_directories(Overclock PUBLIC
+target_include_directories(Overclock INTERFACE
 	${CMAKE_CURRENT_LIST_DIR}
 )
 

@@ -6,6 +6,7 @@
 #define OVERCLOCKING_ENABLED 1 // Define this before including overclock.h
 #include "overclock.h"
 
+#include "hardware/vreg.h"   // For overclocking VREG_VOLTAGE_x_xx
 
 #define PIN_ONBOARD_LED 25
 
@@ -26,8 +27,20 @@ int main() {
 	gpio_set_dir(PIN_ONBOARD_LED, GPIO_OUT);
 	gpio_set_drive_strength(PIN_ONBOARD_LED, GPIO_DRIVE_STRENGTH_2MA);
 
+	// Test Resus
+	// if (test_resus()) {
+	// 	printf("Resus Worked!\n");
+	// } else {
+	// 	printf("Resus event was not triggered!\n");
+	// }
+
 	// Overclock core
-	int ret = overclock_core(OC_PRESETS[OC_FREQ_250], true);
+	// int ret = overclock_core((OverclockConfig_t){50000, VREG_VOLTAGE_0_95}, true); // Custom Setting: {Freq KHz, Core Voltage}
+	// int ret = overclock_core(OC_PRESETS[OC_FREQ_270], true); // WARNING: Requires 1.20V - Do at your own risk!
+	int ret = overclock_core(OC_PRESETS[OC_FREQ_260], true);
+	// int ret = overclock_core(OC_PRESETS[OC_FREQ_250], true);
+	// int ret = overclock_core(OC_PRESETS[OC_FREQ_200], true);
+	// int ret = overclock_core(OC_PRESETS[OC_FREQ_125], true); // This should be default
 	if (ret < 0) {
 		printf("Overclocking failed with error code: %d\n", ret);
 		if (ret == OC_ERR_RESUS_OCCURRED) {

@@ -30,6 +30,7 @@ target_link_libraries(ADS704x-Demo
 	hardware_irq
 	hardware_spi
 	# hardware_timer
+	Overclock
 )
 
 pico_add_extra_outputs(ADS704x-Demo)

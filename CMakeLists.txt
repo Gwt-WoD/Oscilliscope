@@ -32,9 +32,10 @@ include(pico_sdk_import.cmake)
 project(Oscilloscope C CXX ASM)
 
 # Include Libraries
+add_subdirectory(lib/Overclock)
 add_subdirectory(lib/Seesaw)
 add_subdirectory(lib/ADS704x)
-add_subdirectory(lib/Overclock)
+add_subdirectory(lib/pico-displayDrivs)
 # include_directories(lib/Overclock) # Header only library
 
 # Include Examples

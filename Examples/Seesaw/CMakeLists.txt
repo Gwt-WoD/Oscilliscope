@@ -25,6 +25,7 @@ target_include_directories(Seesaw-Demo PRIVATE
 target_link_libraries(Seesaw-Demo
 	pico_multicore
 	hardware_i2c
+	Overclock
 )
 
 pico_add_extra_outputs(Seesaw-Demo)
