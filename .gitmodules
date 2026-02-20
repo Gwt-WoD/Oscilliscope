@@ -1,3 +1,4 @@
 [submodule "pico-displayDrivs"]
 	path = pico-displayDrivs
 	url = https://github.com/Gwt-WoD/pico-displayDrivs.git
+	branch = main
