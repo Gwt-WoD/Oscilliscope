@@ -1,0 +1,15 @@
+Trigger will be tired to one channel. 
+When the voltage is within a small window of the trigger voltage it will be recorded as a triger point
+
+
+main{
+    get data from everything should end up with two channels and the User input scale and Trigger
+
+    function get data snapshot(trigger,horizontal scale, Vertical scale){
+        use the trigger to anchor the start of a wave
+        take as many data points as samplerate*horizontal scale needs and store them in an array
+        do some math on the array to find the min, max, and how many times the voltage was near the trigger point (frequency)
+        to compress the data take 250 points of the data using floor(#datapoints/250) and send the rectified array to the DD
+    }
+    
+}
