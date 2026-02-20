@@ -211,7 +211,7 @@ int main()
 
     
     // Display SPI initialisation
-    spi_init(DISP_SPI, 100*1000*1000); // 100 MHz
+    spi_init(DISP_SPI, 50*1000*1000); // 50 MHz
     gpio_set_function(DISP_PIN_RST, GPIO_FUNC_SPI);
     gpio_set_function(DISP_PIN_CS,  GPIO_FUNC_SIO); // Uhhh... I think this should be GPIO_FUNC_SPI...
     gpio_set_function(DISP_PIN_SCK, GPIO_FUNC_SPI);
