@@ -31,6 +31,10 @@ include(pico_sdk_import.cmake)
 
 project(TestCode C CXX ASM)
 
+add_compile_definitions(
+    USE_DMA
+)
+
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 

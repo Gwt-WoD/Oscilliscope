@@ -187,7 +187,7 @@ int main()
     
     
     // SPI initialisation. This example will use SPI at 1MHz.
-    spi_init(SPI_PORT, 50*1000*1000);
+    spi_init(SPI_PORT, 16*1000*1000);
     gpio_set_function(PIN_RST, GPIO_FUNC_SPI);
     gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
     gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
