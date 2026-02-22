@@ -206,7 +206,7 @@ int seesaw_gpio_digital_write_bulk(Seesaw_t ss, uint32_t pins, uint8_t value) {
 	}
 }
 
-void seesaw_gpio_enable_interrupt(Seesaw_t ss, uint8_t pin) {
+int seesaw_gpio_enable_interrupt(Seesaw_t ss, uint8_t pin) {
 	uint32_t data = (1ul << pin);
 	uint8_t buf[4] = {
 		(uint8_t)(data >> 24),
@@ -214,10 +214,10 @@ void seesaw_gpio_enable_interrupt(Seesaw_t ss, uint8_t pin) {
 		(uint8_t)(data >> 8),
 		(uint8_t)(data >> 0)
 	};
-	seesaw_write_register(ss, SEESAW_GPIO_BASE, 0x08, buf, 4);
+	return seesaw_write_register(ss, SEESAW_GPIO_BASE, 0x08, buf, 4);
 }
 
-void seesaw_gpio_disable_interrupt(Seesaw_t ss, uint8_t pin) {
+int seesaw_gpio_disable_interrupt(Seesaw_t ss, uint8_t pin) {
 	uint32_t data = (1ul << pin);
 	uint8_t buf[4] = {
 		(uint8_t)(data >> 24),
@@ -225,7 +225,7 @@ void seesaw_gpio_disable_interrupt(Seesaw_t ss, uint8_t pin) {
 		(uint8_t)(data >> 8),
 		(uint8_t)(data >> 0)
 	};
-	seesaw_write_register(ss, SEESAW_GPIO_BASE, 0x09, buf, 4);
+	return seesaw_write_register(ss, SEESAW_GPIO_BASE, 0x09, buf, 4);
 }
 
 
@@ -256,24 +256,25 @@ int seesaw_encoder_get_delta(Seesaw_t ss, uint8_t encoder, int32_t *delta) {
 }
 
 
-void seesaw_encoder_enable_interrupt(Seesaw_t ss, uint8_t encoder) {
+int seesaw_encoder_enable_interrupt(Seesaw_t ss, uint8_t encoder) {
 	uint8_t buf[1] = {1u}; // INTEN
-	seesaw_write_register(ss, SEESAW_ENCODER_BASE, (uint8_t)(0x10 + encoder), &buf[0], 1);}
-
-
-void seesaw_encoder_disable_interrupt(Seesaw_t ss, uint8_t encoder) {
-	uint8_t buf[1] = {1u}; // INTDIS
-	seesaw_write_register(ss, SEESAW_ENCODER_BASE, (uint8_t)(0x20 + encoder), &buf[0], 1);
+	return seesaw_write_register(ss, SEESAW_ENCODER_BASE, (uint8_t)(0x10 + encoder), &buf[0], 1);
 }
 
-void seesaw_encoder_set_position(Seesaw_t ss, uint8_t encoder, int32_t position) {
+
+int seesaw_encoder_disable_interrupt(Seesaw_t ss, uint8_t encoder) {
+	uint8_t buf[1] = {1u}; // INTDIS
+	return seesaw_write_register(ss, SEESAW_ENCODER_BASE, (uint8_t)(0x20 + encoder), &buf[0], 1);
+}
+
+int seesaw_encoder_set_position(Seesaw_t ss, uint8_t encoder, int32_t position) {
 	uint8_t buf[4] = {
 		(uint8_t)(position >> 24),
 		(uint8_t)(position >> 16),
 		(uint8_t)(position >> 8),
 		(uint8_t)(position >> 0)
 	};
-	seesaw_write_register(ss, SEESAW_ENCODER_BASE, (uint8_t)(0x30 + encoder), buf, 4);
+	return seesaw_write_register(ss, SEESAW_ENCODER_BASE, (uint8_t)(0x30 + encoder), buf, 4);
 }
 
 

@@ -39,8 +39,8 @@ typedef struct {
 int seesaw_gpio_pin_mode(Seesaw_t ss, uint8_t pin, uint8_t pinmode); // Works??
 int seesaw_gpio_digital_write(Seesaw_t ss, uint8_t pin, bool value); // Works
 int seesaw_gpio_digital_read(Seesaw_t ss, uint8_t pin, bool *value); // Works
-void seesaw_gpio_enable_interrupt(Seesaw_t ss, uint8_t pin); // Works??
-void seesaw_gpio_disable_interrupt(Seesaw_t ss, uint8_t pin); // Works??
+int seesaw_gpio_enable_interrupt(Seesaw_t ss, uint8_t pin); // Works??
+int seesaw_gpio_disable_interrupt(Seesaw_t ss, uint8_t pin); // Works??
 
 int seesaw_gpio_digital_read_bulk(Seesaw_t ss, uint32_t pins, uint32_t *value); // Works??
 int seesaw_gpio_digital_write_bulk(Seesaw_t ss, uint32_t pins, uint8_t value); // Works??
@@ -48,9 +48,9 @@ int seesaw_gpio_digital_write_bulk(Seesaw_t ss, uint32_t pins, uint8_t value); /
 // Seesaw Rotary Encoder
 int seesaw_encoder_get_position(Seesaw_t ss, uint8_t encoder_num, int32_t *position); // Works
 int seesaw_encoder_get_delta(Seesaw_t ss, uint8_t encoder_num, int32_t *delta); // Works
-void seesaw_encoder_enable_interrupt(Seesaw_t ss, uint8_t encoder_num);
-void seesaw_encoder_disable_interrupt(Seesaw_t ss, uint8_t encoder_num);
-void seesaw_encoder_set_position(Seesaw_t ss, uint8_t encoder_num, int32_t position); // Works
+int seesaw_encoder_enable_interrupt(Seesaw_t ss, uint8_t encoder_num);
+int seesaw_encoder_disable_interrupt(Seesaw_t ss, uint8_t encoder_num);
+int seesaw_encoder_set_position(Seesaw_t ss, uint8_t encoder_num, int32_t position); // Works
 
 // Seesaw Neopixel
 int seesaw_neopixel_set_pixel(Seesaw_t ss, uint16_t n, uint32_t color);

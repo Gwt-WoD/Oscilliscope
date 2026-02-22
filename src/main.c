@@ -206,35 +206,35 @@ void core1_main() {
 
     // Configure seesaw
     printf("Configuring Seesaw...\n");
+    const uint8_t button_pins[] = {9, 18, 12}; // Pins on Seesaw MCU, not this one
+    const uint8_t num_enc = 3; // SET ME TO THE NUMBER OF ENCODERS YOU HAVE
     { // Limit scope of err variable
     int err = 0;
     err = seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
     if (err) {
         printf("Error configuring Seesaw LED pin mode: %d\n", err);
-        return -1;
+            return;
     }
     seesaw_gpio_digital_write_bulk(ss, (1ul << SEESAW_PIN_LED), 1); // Turn off onboard LED
-    const uint8_t button_pins[] = {9, 18, 12}; // Pins on Seesaw MCU, not this one
-    const uint8_t num_enc = 3; // SET ME TO THE NUMBER OF ENCODERS YOU HAVE
     for (int i = 0; i < num_enc; i++) {
         printf("Configuring encoder %d and button pin %d...\n", i, button_pins[i]);
         printf("Enabling encoder interrupt...\n");
         err = seesaw_encoder_enable_interrupt(ss, i); // Enable interrupt for encoder
         if (err) {
             printf("Error enabling Seesaw encoder interrupt: %d\n", err);
-            return -1;
+                return;
         }
         printf("\tSetting encoder position to 0...\n");
         err = seesaw_encoder_set_position(ss, i, 0); // Reset encoder position to 0
         if (err) {
             printf("Error setting Seesaw encoder position: %d\n", err);
-            return -1;
+                return;
         }
         printf("\tSetting button pin mode...\n");
         err = seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
         if (err) {
             printf("Error configuring Seesaw button pin mode: %d\n", err);
-            return -1;
+                return;
             }
         }
     }
