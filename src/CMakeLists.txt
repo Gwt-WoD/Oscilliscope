@@ -10,8 +10,15 @@ add_executable(Oscilloscope
 pico_set_program_name(Oscilloscope "Oscilloscope")
 pico_set_program_version(Oscilloscope "0.1")
 
+target_compile_definitions(Oscilloscope PRIVATE
+	# PICO_COLORED_STATUS_LED_AVAILABLE
+	# PICO_DEFAULT_WS2812_PIN=21
+	# USE_DMA
+)
+
 # Generate PIO header
-pico_generate_pio_header(Oscilloscope ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+pico_generate_pio_header(Oscilloscope ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
+# pico_generate_pio_header(Oscilloscope ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(Oscilloscope 1)
@@ -29,6 +36,7 @@ target_include_directories(Oscilloscope PRIVATE
 target_link_libraries(Oscilloscope
 	# Pico
 	pico_multicore
+	pico_status_led
 	# Pico Hardware
 	hardware_spi
 	hardware_pio

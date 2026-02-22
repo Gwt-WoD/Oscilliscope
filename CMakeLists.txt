@@ -31,6 +31,12 @@ include(pico_sdk_import.cmake)
 
 project(Oscilloscope C CXX ASM)
 
+add_compile_definitions(
+    PICO_COLORED_STATUS_LED_AVAILABLE
+    PICO_DEFAULT_WS2812_PIN=21
+    USE_DMA
+)
+
 # Include Libraries
 add_subdirectory(lib/Overclock)
 add_subdirectory(lib/Seesaw)
@@ -42,6 +48,8 @@ add_subdirectory(lib/DisplayDrivers)
 add_subdirectory(Examples/Seesaw)
 add_subdirectory(Examples/ADS704x)
 add_subdirectory(Examples/Overclock)
+
+add_subdirectory(lib/ws2812)
 
 # Include Main Code
 add_subdirectory(src)
