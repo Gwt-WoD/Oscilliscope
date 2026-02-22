@@ -31,6 +31,9 @@
 #include "pins.h" // Pin mappings
 
 
+#define IS_RGBW false
+#include "pico/status_led.h"
+// #include "ws2812.pio.h"
 
 #include "blink.pio.h"
 
