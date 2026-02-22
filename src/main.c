@@ -124,10 +124,23 @@ int main() {
 
 
     // PIO Blinking example
-    PIO pio = pio0;
-    uint offset = pio_add_program(pio, &blink_program);
-    printf("Loaded program at %d\n", offset);
-    blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
+    // PIO pio = pio0;
+    // uint offset = pio_add_program(pio, &blink_program);
+    // printf("Loaded program at %d\n", offset);
+    // blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
+
+        // PIO pio = pio0;
+    // uint offset = pio_add_program(pio, &blink_program);
+    // printf("Loaded program at %d\n", offset);
+    // // blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
+    // blink_pin_forever(pio, 0, offset, 13, 3);
+    // status_led_init();
+    // colored_status_led_set_on_with_color(PICO_COLORED_STATUS_LED_COLOR_FROM_RGB(0, 255, 0)); // Set status LED to green to indicate successful initialization and overclocking
+    bool rc = status_led_init();
+    hard_assert(rc);
+    hard_assert(colored_status_led_supported());
+    colored_status_led_set_on_with_color(PICO_COLORED_STATUS_LED_COLOR_FROM_RGB(0, 255, 0)); // Set status LED to green to indicate successful initialization and overclocking
+    
 
     // Launch second core
     printf("Starting core 1...\n");
