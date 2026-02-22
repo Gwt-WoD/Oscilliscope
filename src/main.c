@@ -206,18 +206,37 @@ void core1_main() {
 
     // Configure seesaw
     printf("Configuring Seesaw...\n");
-    seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
+    { // Limit scope of err variable
+    int err = 0;
+    err = seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
+    if (err) {
+        printf("Error configuring Seesaw LED pin mode: %d\n", err);
+        return -1;
+    }
     seesaw_gpio_digital_write_bulk(ss, (1ul << SEESAW_PIN_LED), 1); // Turn off onboard LED
     const uint8_t button_pins[] = {9, 18, 12}; // Pins on Seesaw MCU, not this one
     const uint8_t num_enc = 3; // SET ME TO THE NUMBER OF ENCODERS YOU HAVE
     for (int i = 0; i < num_enc; i++) {
         printf("Configuring encoder %d and button pin %d...\n", i, button_pins[i]);
         printf("Enabling encoder interrupt...\n");
-        seesaw_encoder_enable_interrupt(ss, i); // Enable interrupt for encoder
+        err = seesaw_encoder_enable_interrupt(ss, i); // Enable interrupt for encoder
+        if (err) {
+            printf("Error enabling Seesaw encoder interrupt: %d\n", err);
+            return -1;
+        }
         printf("\tSetting encoder position to 0...\n");
-        seesaw_encoder_set_position(ss, i, 0); // Reset encoder position to 0
+        err = seesaw_encoder_set_position(ss, i, 0); // Reset encoder position to 0
+        if (err) {
+            printf("Error setting Seesaw encoder position: %d\n", err);
+            return -1;
+        }
         printf("\tSetting button pin mode...\n");
-        seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
+        err = seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
+        if (err) {
+            printf("Error configuring Seesaw button pin mode: %d\n", err);
+            return -1;
+            }
+        }
     }
     bool buttons[num_enc];
     int32_t position[num_enc];
@@ -238,8 +257,6 @@ void core1_main() {
     // read doesn't cause the current sample to be aborted.
     const absolute_time_t delay_us = (40*1000); // 40ms
     absolute_time_t alarm_time = get_absolute_time() + delay_us;
-    const absolute_time_t delay1_us = (1000*1000); // 1s
-    absolute_time_t alarm1_time = get_absolute_time() + delay_us;
 
     // Signal to core 0 that we're done with initialization and ready to go
     multicore_fifo_push_blocking(1);

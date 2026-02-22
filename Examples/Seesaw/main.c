@@ -120,18 +120,35 @@ int main() {
 
 	// Configure seesaw
 	printf("Configuring Seesaw...\n");
-	seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
+	int err = 0;
+	err = seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
+	if (err) {
+		printf("Error configuring Seesaw LED pin mode: %d\n", err);
+		return -1;
+	}
 	seesaw_gpio_digital_write_bulk(ss, (1ul << SEESAW_PIN_LED), 1); // Turn off onboard LED
 	const uint8_t button_pins[] = {9, 18, 12};
 	const uint8_t num_enc = 3;
 	for (int i = 0; i < num_enc; i++) {
 		printf("Configuring encoder %d and button pin %d...\n", i, button_pins[i]);
 		printf("Enabling encoder interrupt...\n");
-		seesaw_encoder_enable_interrupt(ss, i); // Enable interrupt for encoder
+		err = seesaw_encoder_enable_interrupt(ss, i); // Enable interrupt for encoder
+		if (err) {
+			printf("Error enabling Seesaw encoder interrupt: %d\n", err);
+			return -1;
+		}
 		printf("\tSetting encoder position to 0...\n");
-		seesaw_encoder_set_position(ss, i, 0); // Reset encoder position to 0
+		err = seesaw_encoder_set_position(ss, i, 0); // Reset encoder position to 0
+		if (err) {
+			printf("Error setting Seesaw encoder position: %d\n", err);
+			return -1;
+		}
 		printf("\tSetting button pin mode...\n");
-		seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
+		err = seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
+		if (err) {
+			printf("Error configuring Seesaw button pin mode: %d\n", err);
+			return -1;
+		}
 	}
 	
 
@@ -192,9 +209,9 @@ int main() {
 			}
 			// printf("Time: %ld us    Overshoot: %ld us\t", (uint32_t)get_absolute_time(), (uint32_t)absolute_time_diff_us(old, get_absolute_time()));
 			for (int i = 0; i < num_enc; i++) {
-				// printf("Encoder %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
-				printf("Encoder %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
-				// printf("Encoder %d Pos: %03d    ", i, position_calc[i]);
+				// printf("Enc %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
+				printf("Enc %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
+				// printf("Enc %d Pos: %03d    ", i, position_calc[i]);
 			}
 			printf("\n");
 		}
@@ -209,13 +226,6 @@ void main_core1() {
 	gpio_set_drive_strength(PIN_ONBOARD_LED, GPIO_DRIVE_STRENGTH_4MA);
 
 	while(1) {
-		// Blink seesaw onboard LED
-		// sleep_ms(1000);
-		// seesaw_gpio_digital_write(ss, SEESAW_PIN_LED, false); // LED off
-		// sleep_ms(1000);
-		// seesaw_gpio_digital_write(ss, SEESAW_PIN_LED, true); // LED on
-		// printf("Blink!\n");
-		
 		// Blink onboard LED
 		gpio_put(PIN_ONBOARD_LED, false); // LED off
 		// seesaw_gpio_digital_write(ss, SEESAW_PIN_LED, false); // LED on
