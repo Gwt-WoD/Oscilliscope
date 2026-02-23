@@ -62,15 +62,10 @@ static int seesaw_i2c_read(Seesaw_t ss, uint8_t *cmd, size_t cmdlen, uint8_t *bu
 			return -5; // Unknown error
 		}
 	}
-<<<<<<< HEAD
-	sleep_us(250); // Recommended delay between write and read
-	ret = i2c_read_blocking(i2c0, addr, buf, buflen, false);
-=======
 	// sleep_us(250); // Recommended delay between write and read
 	// sleep_us(500); // Min delay for ADC
 	sleep_us(350); // Lets be safe
 	ret = i2c_read_timeout_per_char_us(ss.i2c_inst, ss.i2c_addr, buf, buflen, false, I2C_TIMEOUT_US(ss.baud));
->>>>>>> c962dc88a74b5021b1c0051d9a30038dc747a9f5
 	if (ret != buflen) {
 		if (ret == PICO_ERROR_GENERIC) {
 			printf("[seesaw] I2C read error: device not acknowledged\n");
