@@ -40,15 +40,9 @@ static int seesaw_i2c_write(Seesaw_t ss, uint8_t *data, size_t len) {
 	return 0; // Success
 }
 
-<<<<<<< HEAD
-static int seesaw_i2c_read(uint8_t addr, uint8_t *cmd, size_t cmdlen, uint8_t *buf, size_t buflen) {
-	int ret = i2c_write_blocking(i2c0, addr, cmd, cmdlen, false);
-	// int ret = i2c_write_blocking_until(i2c0, addr, cmd, cmdlen, false);
-=======
 static int seesaw_i2c_read(Seesaw_t ss, uint8_t *cmd, size_t cmdlen, uint8_t *buf, size_t buflen) {
 	if (!buf || !cmd) return -1; // Check pointer
 	int ret = i2c_write_timeout_per_char_us(ss.i2c_inst, ss.i2c_addr, cmd, cmdlen, false, I2C_TIMEOUT_US(ss.baud));
->>>>>>> c962dc88a74b5021b1c0051d9a30038dc747a9f5
 	if (ret != cmdlen) {
 		if (ret == PICO_ERROR_GENERIC) {
 			printf("[seesaw] I2C write error: device not acknowledged\n");
