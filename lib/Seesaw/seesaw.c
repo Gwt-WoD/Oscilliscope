@@ -12,17 +12,12 @@
 #define I2C_TIMEOUT_US(baud) (uint)(1.5 * 9 * (1000000 / baud)) // 9 bits per transfer (8 data + 1 ack), with 50% margin
 
 // NOTE: Replace these stubs with actual Pico SDK I2C code as needed.
-<<<<<<< HEAD
-static int seesaw_i2c_write(uint8_t addr, uint8_t *data, size_t len) {
-	int ret = i2c_write_blocking(i2c0, addr, data, len, false);
-=======
 static int seesaw_i2c_write(Seesaw_t ss, uint8_t *data, size_t len) {
 	if (!data) return -1; // Check pointer
 	// i2c_write_blocking returns number of bytes written, or PICO_ERROR_GENERIC
 	// if address not acknowledged, no device present.
 	// int ret = i2c_write_blocking(ss.i2c_inst, ss.i2c_addr, data, len, false);
 	int ret = i2c_write_timeout_per_char_us(ss.i2c_inst, ss.i2c_addr, data, len, false, I2C_TIMEOUT_US(ss.baud));
->>>>>>> c962dc88a74b5021b1c0051d9a30038dc747a9f5
 	if (ret != len) {
 		if (ret == PICO_ERROR_GENERIC) {
 			printf("[seesaw] I2C write error: device not acknowledged\n");
