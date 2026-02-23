@@ -13,7 +13,7 @@
 
 // NOTE: Replace these stubs with actual Pico SDK I2C code as needed.
 static int seesaw_i2c_write(uint8_t addr, uint8_t *data, size_t len) {
-	int ret = i2c_write_blocking(i2c1, addr, data, len, false);
+	int ret = i2c_write_blocking(i2c0, addr, data, len, false);
 	if (ret != len) {
 		printf("I2C write error: %d\n", ret);
 		return -1;
@@ -22,14 +22,14 @@ static int seesaw_i2c_write(uint8_t addr, uint8_t *data, size_t len) {
 }
 
 static int seesaw_i2c_read(uint8_t addr, uint8_t *cmd, size_t cmdlen, uint8_t *buf, size_t buflen) {
-	int ret = i2c_write_blocking(i2c1, addr, cmd, cmdlen, false);
-	// int ret = i2c_write_blocking_until(i2c1, addr, cmd, cmdlen, false);
+	int ret = i2c_write_blocking(i2c0, addr, cmd, cmdlen, false);
+	// int ret = i2c_write_blocking_until(i2c0, addr, cmd, cmdlen, false);
 	if (ret != cmdlen) {
 		printf("I2C write error: %d\n", ret);
 		return ret;
 	}
 	sleep_us(250); // Recommended delay between write and read
-	ret = i2c_read_blocking(i2c1, addr, buf, buflen, false);
+	ret = i2c_read_blocking(i2c0, addr, buf, buflen, false);
 	if (ret != buflen) {
 		printf("I2C read error: %d\n", ret);
 		return ret;

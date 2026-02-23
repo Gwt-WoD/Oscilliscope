@@ -95,7 +95,7 @@ int main() {
      * I believe SPI0 and SPI1 share the same clock divider.
      * The ADC operates at a max clock of 16MHz
      */
-    spi_init(DISP_SPI, 16*1000*1000); // 16 MHz
+    spi_init(DISP_SPI, 60*1000*1000); // 16 MHz
     gpio_set_function(DISP_PIN_RST,  GPIO_FUNC_SPI);
     gpio_set_function(DISP_PIN_CS,   GPIO_FUNC_SIO); // Uhhh... I think this should be GPIO_FUNC_SPI... -Michael
     gpio_set_function(DISP_PIN_SCK,  GPIO_FUNC_SPI);
@@ -168,14 +168,14 @@ int main() {
             i++;
         }
 
-
         //DATA PROCESSOR BLOCK
         DataProcessor(DataArray1, DataArray2, NumSamples, VerticalScale, TriggerVoltage);
 
         //DISPLAY DRIVER BLOCK     
         DispDriver(DataArray1, DataArray2, NumSamples, HorizontalScale, VerticalScale, TriggerVoltage);   
-
-        c++;
+        if(HorizontalScale < 10000){
+            HorizontalScale = HorizontalScale + 10;
+        }
     }
 }
 
@@ -249,7 +249,7 @@ void core1_main() {
             }
             
             if (bad) {
-                // printf("Error reading from Seesaw\n");
+                //printf("Error reading from Seesaw\n");
                 continue; // Skip printing if there was an error reading from Seesaw
             }
             // printf("Time: %ld us    Overshoot: %ld us\t", (uint32_t)get_absolute_time(), (uint32_t)absolute_time_diff_us(old, get_absolute_time()));
@@ -283,6 +283,7 @@ void DispDriver(float* VC1, float* VC2, int NS, float HS, float VS, float Trigge
     GFX_printf("Trigger: The Trigger Voltage is %f volts\n", Trigger);
     GFX_printf("VS: 1 tick = %f volts\n", (VS / 1000));
     GFX_printf("HS: 1 tick = %f ms\n", (HS / 10000));
+    GFX_printf("c = %d ms\n", VC2[NS + 2]);
     
 
     //channel prints
