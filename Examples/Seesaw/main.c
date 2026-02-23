@@ -49,7 +49,10 @@
 // #define PAUSE_AT_STARTUP 0
 #define PAUSE_AT_STARTUP 1
 
-
+Seesaw_t ss = {
+	.i2c_inst = I2C_PORT,
+	.i2c_addr = SEESAW_DEFAULT_ADDR
+};
 
 // Function declarations
 void main_core1();
@@ -104,7 +107,12 @@ int main() {
 
 	// I2C Initialisation. Using it at 400Khz.
 	printf("Initialising I2C...\n");
-	i2c_init(I2C_PORT, 400*1000); // 400kHz
+	// Returns actual baudrate which may differ from requested baud
+	ss.baud = i2c_init(I2C_PORT, 400*1000); // 400kHz
+	/**
+	 * NOTE: We may need stronger pull-ups for higher baud rates (2.2k for 400kHz)
+	 */
+	printf("I2C baudrate set to: %d Hz\n", ss.baud);
 	gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
 	gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
 	gpio_pull_up(I2C_SDA);
@@ -112,18 +120,35 @@ int main() {
 
 	// Configure seesaw
 	printf("Configuring Seesaw...\n");
-	seesaw_gpio_pin_mode(SEESAW_DEFAULT_ADDR, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
-	seesaw_gpio_digital_write_bulk(SEESAW_DEFAULT_ADDR, (1ul << SEESAW_PIN_LED), 1); // Turn off onboard LED
+	int err = 0;
+	err = seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
+	if (err) {
+		printf("Error configuring Seesaw LED pin mode: %d\n", err);
+		return -1;
+	}
+	seesaw_gpio_digital_write_bulk(ss, (1ul << SEESAW_PIN_LED), 1); // Turn off onboard LED
 	const uint8_t button_pins[] = {9, 18, 12};
 	const uint8_t num_enc = 3;
 	for (int i = 0; i < num_enc; i++) {
 		printf("Configuring encoder %d and button pin %d...\n", i, button_pins[i]);
 		printf("Enabling encoder interrupt...\n");
-		seesaw_encoder_enable_interrupt(SEESAW_DEFAULT_ADDR, i); // Enable interrupt for encoder
+		err = seesaw_encoder_enable_interrupt(ss, i); // Enable interrupt for encoder
+		if (err) {
+			printf("Error enabling Seesaw encoder interrupt: %d\n", err);
+			return -1;
+		}
 		printf("\tSetting encoder position to 0...\n");
-		seesaw_encoder_set_position(SEESAW_DEFAULT_ADDR, i, 0); // Reset encoder position to 0
+		err = seesaw_encoder_set_position(ss, i, 0); // Reset encoder position to 0
+		if (err) {
+			printf("Error setting Seesaw encoder position: %d\n", err);
+			return -1;
+		}
 		printf("\tSetting button pin mode...\n");
-		seesaw_gpio_pin_mode(SEESAW_DEFAULT_ADDR, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
+		err = seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
+		if (err) {
+			printf("Error configuring Seesaw button pin mode: %d\n", err);
+			return -1;
+		}
 	}
 	
 
@@ -148,9 +173,9 @@ int main() {
 		if (time_reached(alarm1_time)) {
 			alarm1_time = get_absolute_time() + delay1_us;
 			bool curr_led_state;
-			seesaw_gpio_digital_read(SEESAW_DEFAULT_ADDR, SEESAW_PIN_LED, &curr_led_state);
+			seesaw_gpio_digital_read(ss, SEESAW_PIN_LED, &curr_led_state);
 			// Toggle LED state
-			seesaw_gpio_digital_write(SEESAW_DEFAULT_ADDR, SEESAW_PIN_LED, !curr_led_state);
+			seesaw_gpio_digital_write(ss, SEESAW_PIN_LED, !curr_led_state);
 		}
 
 		// Read encoder positions every 100ms
@@ -160,16 +185,22 @@ int main() {
 		
 			bool bad = false;
 			for (int i = 0; i < num_enc; i++) {
-				// if (seesaw_encoder_get_delta(SEESAW_DEFAULT_ADDR, i, &delta[i]) == 0)
+				// if (seesaw_encoder_get_delta(ss, i, &delta[i]) == 0)
 				// 	position_calc[i] += delta[i];
-				// else printf("Error reading encoder delta\n");
-				// seesaw_encoder_get_position(SEESAW_DEFAULT_ADDR, i, &position[i]);
-				if (seesaw_encoder_get_position(SEESAW_DEFAULT_ADDR, i, &position[i]) != 0)
+				// else {
+				// 	bad = true;
+				// 	printf("Error reading encoder delta\n");
+				// }
+				if (seesaw_encoder_get_position(ss, i, &position[i]) != 0) {
 					bad = true;
 					// printf("Error reading encoder position\n");
-				// sleep_ms(5); // Small delay to avoid I2C congestion
-				seesaw_gpio_digital_read(SEESAW_DEFAULT_ADDR, button_pins[i], &buttons[i]); // Read button state
-				sleep_ms(5); // Small delay to avoid I2C congestion
+				}
+				sleep_us(250); // Small delay to avoid overloading the seesaw
+				if (seesaw_gpio_digital_read(ss, button_pins[i], &buttons[i]) != 0) {
+					bad = true;
+					// printf("Error reading button state\n");
+				}
+				sleep_us(250); // Small delay to avoid overloading the seesaw
 			}
 			
 			if (bad) {
@@ -178,9 +209,9 @@ int main() {
 			}
 			// printf("Time: %ld us    Overshoot: %ld us\t", (uint32_t)get_absolute_time(), (uint32_t)absolute_time_diff_us(old, get_absolute_time()));
 			for (int i = 0; i < num_enc; i++) {
-				// printf("Encoder %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
-				printf("Encoder %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
-				// printf("Encoder %d Pos: %03d    ", i, position_calc[i]);
+				// printf("Enc %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
+				printf("Enc %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
+				// printf("Enc %d Pos: %03d    ", i, position_calc[i]);
 			}
 			printf("\n");
 		}
@@ -195,19 +226,12 @@ void main_core1() {
 	gpio_set_drive_strength(PIN_ONBOARD_LED, GPIO_DRIVE_STRENGTH_4MA);
 
 	while(1) {
-		// Blink seesaw onboard LED
-		// sleep_ms(1000);
-		// seesaw_gpio_digital_write(SEESAW_DEFAULT_ADDR, SEESAW_PIN_LED, false); // LED off
-		// sleep_ms(1000);
-		// seesaw_gpio_digital_write(SEESAW_DEFAULT_ADDR, SEESAW_PIN_LED, true); // LED on
-		// printf("Blink!\n");
-		
 		// Blink onboard LED
 		gpio_put(PIN_ONBOARD_LED, false); // LED off
-		// seesaw_gpio_digital_write(SEESAW_DEFAULT_ADDR, SEESAW_PIN_LED, false); // LED on
+		// seesaw_gpio_digital_write(ss, SEESAW_PIN_LED, false); // LED on
 		sleep_ms(1000);
 		gpio_put(PIN_ONBOARD_LED, true); // LED on
-		// seesaw_gpio_digital_write(SEESAW_DEFAULT_ADDR, SEESAW_PIN_LED, true); // LED off
+		// seesaw_gpio_digital_write(ss, SEESAW_PIN_LED, true); // LED off
 		// printf("Blink!\n");
 		sleep_ms(1000);
 	}
