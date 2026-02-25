@@ -13,9 +13,6 @@
 #include "ads704x_dma.h"
 
 // Display
-// #include "pico-displayDrivs/ili9341/ili9341.h"
-// #include "pico-displayDrivs/gfx/gfx.h"
-// #include "pico-displayDrivs/gfx/font.h"
 #include "ili9341.h"
 #include "gfx.h"
 #include "font.h"
@@ -40,6 +37,28 @@ Seesaw_t ss = {
 	.i2c_addr = SEESAW_DEFAULT_ADDR
 };
 
+// const size_t DataArray_len = (16*1024 / 4);
+const size_t DataArray_len = (16*1024 / 4);
+uint16_t DataArray0[DataArray_len];
+uint16_t DataArray1[DataArray_len];
+
+
+volatile float HorizontalScale = 1000;     // uS
+volatile uint16_t VerticalScale = 1000;    // mV
+volatile uint16_t TriggerVoltage = 1000;   // mV
+volatile uint32_t SamplingRate = 200*1000; // Hz
+uint32_t NumSamples;
+
+
+typedef struct {
+    uint16_t max;
+    uint16_t min;
+    uint16_t NumTriggers;
+} VC_stats_t;
+
+VC_stats_t VC1_stats;
+VC_stats_t VC2_stats;
+
 
 void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq) {
     blink_program_init(pio, sm, offset, pin);
@@ -54,9 +73,8 @@ void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq) {
 
 
 
-void DataProcessor(float* VC1, float* VC2, int NS, float VS, float Trigger);
-void DispDriver(float* VC1, float* VC2, int NS, float HS, float VS, float Trigger);
-
+void DataProcessor(uint16_t* VC1, uint16_t* VC2, uint NS, uint16_t VS, uint16_t Trigger);
+void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps);
 
 void core1_main();
 
@@ -73,6 +91,7 @@ int main() {
     printf("Serial connected!\n");
 
 
+    { // Limit scope
     // Overclock core
     const bool VERBOSE_OVERCLOCK = true;
     // int ret = overclock_core(OC_PRESETS[OC_FREQ_270], VERBOSE_OVERCLOCK); // WARNING: Requires 1.20V - Do at your own risk!
@@ -89,6 +108,19 @@ int main() {
         }
     } else {
         printf("Overclocking successful! New frequency: %d kHz\n", ret);
+        }
+        printf("Getting pll_sys clock speed");
+        // Get pll_sys clock speed
+        uint32_t _pll_sys = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
+        printf("\tpll_sys: %d\n", _pll_sys*1000);
+        printf("Configuring clk_peri source to pll_sys with no division...\n");
+        clock_configure(clk_peri, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS, _pll_sys*1000, _pll_sys*1000);
+        printf("\tclk_peri: %d\n", clock_get_hz(clk_peri));
+
+        // Configure ~10 KHz clock output for probe calibration and testing
+        printf("Configuring Freq. Gen. GPIO output...\n");
+        // clock_gpio_init(AFE_FREQ_GEN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, 25000);
+        clock_gpio_init(AFE_FREQ_GEN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, (uint16_t)(ret/10)); // 10 KHz output for calibration
     }
     
 
@@ -102,7 +134,9 @@ int main() {
      * I believe SPI0 and SPI1 share the same clock divider.
      * The ADC operates at a max clock of 16MHz
      */
-    spi_init(DISP_SPI, 60*1000*1000); // 16 MHz
+    // spi_init(DISP_SPI, 16*1000*1000); // 16 MHz
+    uint32_t baud = spi_init(DISP_SPI, 65*1000*1000); // 65 MHz
+    printf("SPI Baud set to %u\n", baud);
     gpio_set_function(DISP_PIN_RST,  GPIO_FUNC_SPI);
     gpio_set_function(DISP_PIN_CS,   GPIO_FUNC_SIO); // Uhhh... I think this should be GPIO_FUNC_SPI... -Michael
     gpio_set_function(DISP_PIN_SCK,  GPIO_FUNC_SPI);
@@ -122,9 +156,13 @@ int main() {
 
     // PIO Blinking example
     PIO pio = pio0;
+    { // Limit scope of offset variable
     uint offset = pio_add_program(pio, &blink_program);
     printf("Loaded program at %d\n", offset);
-    blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
+        // blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
+        blink_pin_forever(pio, 0, offset, 13, 3);
+    }
+
 
     // Launch second core
     printf("Starting core 1...\n");
@@ -139,50 +177,50 @@ int main() {
     printf("Initialization complete!\n");
 
 
-    //DEBUG: X value for validation cosines
-    float x = 0;
-
-
-    //in V
-    float TriggerVoltage = 1;
-    //in us
-    int HorizontalScale = 1000;
-    //in mV
-    int VerticalScale = 1000;
-    //in kHz
-    int SamplingRate = 200;
-
-    int c;
-    while (true) {
-        
-        //convert to microseconds 1kHz = 1000us and convert to number of samples
-        int NumSamples = HorizontalScale/(1000/SamplingRate);
+    //DEBUG: Validation cosines
+    for (int x=0; x < DataArray_len; x++) {
+        // ((uint16_t*)data_buffer0)[i] = (uint16_t)floor((2*1000 * cos(2 * M_PI * i))) + 2.5;
+        // ((uint16_t*)data_buffer1)[i] = (uint16_t)floor((2*1000 * cos(2 * M_PI * i))) + 2.5;
+        uint16_t y = 1000.0 * ((2.5 * cos(2 * (2.0*M_PI) * x / DataArray_len)) + 2.5);
+        uint16_t y2 = 1000.0 * ((0.75 * cos(7.5 * (2.0*M_PI) * x / DataArray_len)) + 3.0);
+        DataArray0[x] = y;
+        DataArray1[x] = y2;
+    }
     
-
-        //initialize both arrays
-        float DataArray1[NumSamples+3];
-        float DataArray2[NumSamples+3];
-
-
-        //DEBUG: Validation cosines
-        int i = 0;
-        while (i < NumSamples){
-            float y = (2.5 * cos(2 * M_PI * x)) + 2.5;
-            float y2 = (0.5 * cos(3 * M_PI * x)) + 2.5;
-            x = x + 0.01;
-            DataArray1[i] = y;
-            DataArray2[i] = y2;
-            i++;
+    volatile uint32_t start, end;
+    volatile uint32_t start_avg, end_avg; // TODO: 
+    volatile uint32_t max, min;
+    volatile float fps;
+    volatile int c;
+    start_avg = time_us_32();
+    while (true) {
+        if (c >= 20) {
+            c = 0;
+            end_avg = end;
+            fps = (float)((20.0*1000.0*1000.0)/(end - start_avg));
+            // printf("FPS: %.03f    Avg: %.02f ms    Max: %.02f ms    Min: %.02f ms\n", (float)((20.0*1000.0*1000.0)/(end - start_avg)), (float)((end - start_avg)/(20.0*1000)), (float)(max/1000.0), (float)(min/1000.0));
+            max = 0;
+            min = UINT32_MAX;
+            start_avg = time_us_32();
         }
+        start = time_us_32();
+
+        //convert to microseconds 1Hz = 1000,000us and convert to number of samples
+        NumSamples = HorizontalScale / (1000*1000 / SamplingRate);
+
 
         //DATA PROCESSOR BLOCK
-        DataProcessor(DataArray1, DataArray2, NumSamples, VerticalScale, TriggerVoltage);
+        DataProcessor(DataArray0, DataArray1, DataArray_len, VerticalScale, TriggerVoltage);
 
         //DISPLAY DRIVER BLOCK     
-        DispDriver(DataArray1, DataArray2, NumSamples, HorizontalScale, VerticalScale, TriggerVoltage);   
-        if(HorizontalScale < 10000){
-            HorizontalScale = HorizontalScale + 10;
-        }
+        DispDriver(DataArray0, DataArray1, DataArray_len, HorizontalScale, VerticalScale, TriggerVoltage, fps);
+        
+
+        end = time_us_32();
+        volatile uint32_t t = end - start;
+        if (t > max) max = t;
+        if (t < min) min = t;
+        c++;
     }
 }
 
@@ -194,7 +232,8 @@ void core1_main() {
     // User Input I2C Initialisation. Using it at 400Khz.
     printf("Initialising I2C...\n");
     // Returns actual baudrate which may differ from requested baud
-    ss.baud = i2c_init(I2C_PORT, 400*1000); // 400kHz
+    // ss.baud = i2c_init(I2C_PORT, 400*1000); // 400kHz
+    ss.baud = i2c_init(I2C_PORT, 100*1000); // 400kHz
     /**
      * NOTE: We may need stronger pull-ups for higher baud rates (2.2k for 400kHz)
      */
@@ -209,34 +248,21 @@ void core1_main() {
     const uint8_t button_pins[] = {9, 18, 12}; // Pins on Seesaw MCU, not this one
     const uint8_t num_enc = 3; // SET ME TO THE NUMBER OF ENCODERS YOU HAVE
     { // Limit scope of err variable
-    int err = 0;
-    err = seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT); // Set pin 5 (onboard LED) as output
-    if (err) {
-        printf("Error configuring Seesaw LED pin mode: %d\n", err);
-            return;
-    }
+        while(seesaw_gpio_pin_mode(ss, SEESAW_PIN_LED, SEESAW_OUTPUT)); // Set pin 5 (onboard LED) as output
     seesaw_gpio_digital_write_bulk(ss, (1ul << SEESAW_PIN_LED), 1); // Turn off onboard LED
     for (int i = 0; i < num_enc; i++) {
         printf("Configuring encoder %d and button pin %d...\n", i, button_pins[i]);
         printf("Enabling encoder interrupt...\n");
-        err = seesaw_encoder_enable_interrupt(ss, i); // Enable interrupt for encoder
-        if (err) {
-            printf("Error enabling Seesaw encoder interrupt: %d\n", err);
-                return;
-        }
+            while(seesaw_encoder_enable_interrupt(ss, i)); // Enable interrupt for encoder
         printf("\tSetting encoder position to 0...\n");
-        err = seesaw_encoder_set_position(ss, i, 0); // Reset encoder position to 0
-        if (err) {
-            printf("Error setting Seesaw encoder position: %d\n", err);
-                return;
-        }
+            while(seesaw_encoder_set_position(ss, i, 0)); // Reset encoder position to 0
         printf("\tSetting button pin mode...\n");
-        err = seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP); // Set button pins as input with pull-up
-        if (err) {
-            printf("Error configuring Seesaw button pin mode: %d\n", err);
-                return;
-            }
+            while(seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP)); // Set button pins as input with pull-up
         }
+        // H Scale
+        while(seesaw_encoder_set_position(ss, 0, 1000/1)); // Reset encoder position to 100
+        // V Scale
+        while(seesaw_encoder_set_position(ss, 1, 1000/100)); // Reset encoder position to 100
     }
     bool buttons[num_enc];
     int32_t position[num_enc];
@@ -308,12 +334,28 @@ void core1_main() {
                 //printf("Error reading from Seesaw\n");
                 continue; // Skip printing if there was an error reading from Seesaw
             }
+
+            // Change the data
+            if (position[0] <= 0) {
+                position[0] = 1;
+                seesaw_encoder_set_position(ss, 0, 1);
+            }
+            if (position[1] <= 0) {
+                position[1] = 1;
+                seesaw_encoder_set_position(ss, 1, 1);
+            }
+            HorizontalScale = position[0]*1;
+            VerticalScale = position[1]*100;
+
             // printf("Time: %ld us    Overshoot: %ld us\t", (uint32_t)get_absolute_time(), (uint32_t)absolute_time_diff_us(old, get_absolute_time()));
             for (int i = 0; i < num_enc; i++) {
                 // printf("Enc %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
                 printf("Enc %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
+                // printf("%04ld (%01u)   ", position[i], !buttons[i]);
+                stdio_flush();
                 // printf("Enc %d Pos: %03d    ", i, position_calc[i]);
             }
+            // printf("VS: %u", VerticalScale);
             printf("\n");
         }
     }
@@ -325,29 +367,30 @@ void core1_main() {
 //FUNCTION: DISPLAY DRIVER
 //DESC: Example descriptions
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
-void DispDriver(float* VC1, float* VC2, int NS, float HS, float VS, float Trigger) {
+void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps) {
 
     GFX_clearScreen();
     GFX_setCursor(0, 0);
     GFX_fillScreen(GFX_RGB565(50,50,50));
     
     //value prints
-    GFX_printf("VC1: The Max is %f\n", VC1[NS]);
-    GFX_printf("VC1: The Min is %f\n", VC1[NS + 1]);
-    GFX_printf("VC2: The Max is %f\n", VC2[NS]);
-    GFX_printf("VC2: The Min is %f\n", VC2[NS + 1]);
-    GFX_printf("Trigger: The Trigger Voltage is %f volts\n", Trigger);
-    GFX_printf("VS: 1 tick = %f volts\n", (VS / 1000));
-    GFX_printf("HS: 1 tick = %f ms\n", (HS / 10000));
-    GFX_printf("c = %d ms\n", VC2[NS + 2]);
-    
+    GFX_printf("FPS: %.03f\n", fps);
+    GFX_printf("VC1: The Max is %.03f V\n", (VC1_stats.max / 1000.0));
+    GFX_printf("VC1: The Min is %.03f V\n", (VC1_stats.min / 1000.0));
+    GFX_printf("VC2: The Max is %.03f V\n", (VC2_stats.max / 1000.0));
+    GFX_printf("VC2: The Min is %.03f V\n", (VC2_stats.min / 1000.0));
+    GFX_printf("Trigger: The Trigger Voltage is %03f volts\n", (Trigger / 1000.0));
+    if (VS >= 1000*1000) GFX_printf("VS: %.03f kV/div\n", (float)(VS / 1000.0 / 1000.0)); // kV
+    else if (VS >= 1000) GFX_printf("VS: %.03f V/div\n", (float)(VS / 1000.0)); // V
+    else GFX_printf("VS: %.03f mV/div\n", (float)(VS)); // mV
+    GFX_printf("HS: %.03f ms/div\n", (HS / 1000)); // This is NOT uS?
 
-    //channel prints
-    int i = 0;
-    while(i < NS){
-        GFX_drawPixel(((300 * i) / NS) + 10, 200 - floor(VC1[i] * (20000/VS)), GFX_RGB565(255,0,0));
-        GFX_drawPixel(((300 * i) / NS) + 10, 200 - floor(VC2[i] * (20000/VS)), GFX_RGB565(0,0,255));
-        i++;
+    // Draw waveforms to disp buffer
+    for (uint32_t i=0; i < NS; i++){
+        // Width in pixels * sample# / number of samples
+        const uint32_t x = ((300 * i) / NS) + 10;
+        GFX_drawPixel(x, fmaxf(100, (200 - floor(VC1[i] * (20.0/VS)))), GFX_RGB565(255,0,0));
+        GFX_drawPixel(x, fmaxf(100, (200 - floor(VC2[i] * (20.0/VS)))), GFX_RGB565(0,0,255));
     }
 
     //box around functions
@@ -380,22 +423,21 @@ void DispDriver(float* VC1, float* VC2, int NS, float HS, float VS, float Trigge
 //FUNCTION: DATA PROCESSOR
 //DESC: Takes in two arrays of data and does some math. spits them out on the other side
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
-void DataProcessor(float* VC1, float* VC2, int NS, float VS, float Trigger) {
+void DataProcessor(uint16_t* VC1, uint16_t* VC2, uint NS, uint16_t VS, uint16_t Trigger) {
     //VC1 Variables
-    float MinVC1 = 100;
-    float MaxVC1 = 0;
+    uint16_t MinVC1 = UINT16_MAX;
+    uint16_t MaxVC1 = 0;
     bool TriggerFlagVC1 = 0;
     int NumTriggersVC1 = 0;
     
     //VC2 Variables
-    float MinVC2 = 100;
-    float MaxVC2 = 0;
+    uint16_t MinVC2 = UINT16_MAX;
+    uint16_t MaxVC2 = 0;
     bool TriggerFlagVC2 = 0;
     int NumTriggersVC2 = 0;
-    int j = 0;
     
     //loop from the start to the end of the arrays and calculate important values
-    while(j < NS){
+    for (int j=0; j < NS; j++) {
         
         if(VC1[j] > MaxVC1){
             MaxVC1 = VC1[j];
@@ -412,29 +454,35 @@ void DataProcessor(float* VC1, float* VC2, int NS, float VS, float Trigger) {
         if(VC2[j] < MinVC2){
             MinVC2 = VC2[j];
         }
-
-        j++;
     }
 
 
+    VC1_stats.max = MaxVC1;
+    VC1_stats.min = MinVC1;
+    VC1_stats.NumTriggers = NumTriggersVC1;
 
-    //Use the last couple of slots for important values
-    VC1[NS] = MaxVC1; 
-    VC1[NS + 1] = MinVC1;
-    VC1[NS + 2] = NumTriggersVC1;
+    VC2_stats.max = MaxVC2;
+    VC2_stats.min = MinVC2;
+    VC2_stats.NumTriggers = NumTriggersVC2;
+
+
+    // //Use the last couple of slots for important values
+    // VC1[NS] = MaxVC1;
+    // VC1[NS + 1] = MinVC1;
+    // VC1[NS + 2] = NumTriggersVC1;
    
-    //DEBUG: Serial PRint of special values
-    //printf("VC1: The Max is %f\n", VC1[NS]);
-    //printf("VC1: The Min is %f\n", VC1[NS + 1]);
-    //printf("VC1: The Number of Triggers is %f\n", VC1[NS + 2]);
+    // //DEBUG: Serial PRint of special values
+    // //printf("VC1: The Max is %f\n", VC1[NS]);
+    // //printf("VC1: The Min is %f\n", VC1[NS + 1]);
+    // //printf("VC1: The Number of Triggers is %f\n", VC1[NS + 2]);
     
-    VC2[NS] = MaxVC2; 
-    VC2[NS + 1] = MinVC2;
-    VC2[NS + 2] = NumTriggersVC2;
+    // VC2[NS] = MaxVC2;
+    // VC2[NS + 1] = MinVC2;
+    // VC2[NS + 2] = NumTriggersVC2;
 
-    //DEBUG: Serial PRint of special values
-    //printf("VC2: The Max is %f\n", VC2[NS]);
-    //printf("VC2: The Min is %f\n", VC2[NS + 1]);
-    //printf("VC2: The Number of Triggers is %f\n", VC2[NS + 2]);
+    // //DEBUG: Serial PRint of special values
+    // //printf("VC2: The Max is %f\n", VC2[NS]);
+    // //printf("VC2: The Min is %f\n", VC2[NS + 1]);
+    // //printf("VC2: The Number of Triggers is %f\n", VC2[NS + 2]);
 
 }
