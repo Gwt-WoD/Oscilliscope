@@ -47,6 +47,9 @@
 
 
 // Shared I2C Pins
+// #define I2C_PORT      i2c0
+// #define I2C_SDA       24
+// #define I2C_SCL       25
 #define I2C_PORT      i2c0
 #define I2C_SDA       4
 #define I2C_SCL       5
