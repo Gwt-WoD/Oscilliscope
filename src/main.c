@@ -37,10 +37,10 @@ Seesaw_t ss = {
 	.i2c_addr = SEESAW_DEFAULT_ADDR
 };
 
-// const size_t DataArray_len = (16*1024 / 4);
-const size_t DataArray_len = (16*1024 / 4);
-uint16_t DataArray0[DataArray_len];
-uint16_t DataArray1[DataArray_len];
+// const size_t DataArray_len = (16*1024);
+const size_t DataArray_len = (16*1024 / 4); // For performance
+uint16_t DataArray0[16*1024];
+uint16_t DataArray1[16*1024];
 
 
 volatile float HorizontalScale = 1000;     // uS
