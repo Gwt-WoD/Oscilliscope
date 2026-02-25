@@ -181,6 +181,7 @@ int main() {
     for (int x=0; x < DataArray_len; x++) {
         // ((uint16_t*)data_buffer0)[i] = (uint16_t)floor((2*1000 * cos(2 * M_PI * i))) + 2.5;
         // ((uint16_t*)data_buffer1)[i] = (uint16_t)floor((2*1000 * cos(2 * M_PI * i))) + 2.5;
+        // Normalized period to length of data array => freq. * 2pi/len * x
         uint16_t y = 1000.0 * ((2.5 * cos(2 * (2.0*M_PI) * x / DataArray_len)) + 2.5);
         uint16_t y2 = 1000.0 * ((0.75 * cos(7.5 * (2.0*M_PI) * x / DataArray_len)) + 3.0);
         DataArray0[x] = y;
@@ -210,10 +211,10 @@ int main() {
 
 
         //DATA PROCESSOR BLOCK
-        DataProcessor(DataArray0, DataArray1, DataArray_len, VerticalScale, TriggerVoltage);
+        DataProcessor(DataArray0, DataArray1, NumSamples, VerticalScale, TriggerVoltage);
 
         //DISPLAY DRIVER BLOCK     
-        DispDriver(DataArray0, DataArray1, DataArray_len, HorizontalScale, VerticalScale, TriggerVoltage, fps);
+        DispDriver(DataArray0, DataArray1, NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps);
         
 
         end = time_us_32();
@@ -260,9 +261,9 @@ void core1_main() {
             while(seesaw_gpio_pin_mode(ss, button_pins[i], SEESAW_INPUT_PULLUP)); // Set button pins as input with pull-up
         }
         // H Scale
-        while(seesaw_encoder_set_position(ss, 0, 1000/1)); // Reset encoder position to 100
+        while(seesaw_encoder_set_position(ss, 0, 20*1000/500)); // Reset encoder position to 20000
         // V Scale
-        while(seesaw_encoder_set_position(ss, 1, 1000/100)); // Reset encoder position to 100
+        while(seesaw_encoder_set_position(ss, 1, 1000/100)); // Reset encoder position to 1000
     }
     bool buttons[num_enc];
     int32_t position[num_enc];
@@ -344,7 +345,7 @@ void core1_main() {
                 position[1] = 1;
                 seesaw_encoder_set_position(ss, 1, 1);
             }
-            HorizontalScale = position[0]*1;
+            HorizontalScale = position[0]*500;
             VerticalScale = position[1]*100;
 
             // printf("Time: %ld us    Overshoot: %ld us\t", (uint32_t)get_absolute_time(), (uint32_t)absolute_time_diff_us(old, get_absolute_time()));
@@ -383,7 +384,7 @@ void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, ui
     if (VS >= 1000*1000) GFX_printf("VS: %.03f kV/div\n", (float)(VS / 1000.0 / 1000.0)); // kV
     else if (VS >= 1000) GFX_printf("VS: %.03f V/div\n", (float)(VS / 1000.0)); // V
     else GFX_printf("VS: %.03f mV/div\n", (float)(VS)); // mV
-    GFX_printf("HS: %.03f ms/div\n", (HS / 1000)); // This is NOT uS?
+    GFX_printf("HS: %.03f ms/div\n", (HS / 1000)); // mS
 
     // Draw waveforms to disp buffer
     for (uint32_t i=0; i < NS; i++){
