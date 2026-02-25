@@ -37,8 +37,9 @@ Seesaw_t ss = {
 	.i2c_addr = SEESAW_DEFAULT_ADDR
 };
 
-// const size_t DataArray_len = (16*1024);
-const size_t DataArray_len = (16*1024 / 4); // For performance
+const size_t DataArray_len = (16*1024);
+// const size_t DataArray_len = (16*1024 / 2); // For performance
+// const size_t DataArray_len = (16*1024 / 4); // For performance
 uint16_t DataArray0[16*1024];
 uint16_t DataArray1[16*1024];
 
@@ -83,12 +84,11 @@ int main() {
     // Initialize serial output
     stdio_init_all();
     // Looking for USB connection. Waiting until serial is opened
-    while (!stdio_usb_connected()) {
-        sleep_ms(50);
-    }
-    sleep_ms(50);
-
-    printf("Serial connected!\n");
+    // while (!stdio_usb_connected()) {
+    //     sleep_ms(50);
+    // }
+    // sleep_ms(50);
+    // printf("Serial connected!\n");
 
 
     { // Limit scope
@@ -207,7 +207,8 @@ int main() {
         start = time_us_32();
 
         //convert to microseconds 1Hz = 1000,000us and convert to number of samples
-        NumSamples = HorizontalScale / (1000*1000 / SamplingRate);
+        NumSamples = HorizontalScale / (1000*1000 / SamplingRate); // Untested
+        // NumSamples = fminf(DataArray_len, (HorizontalScale / (1000*1000 / SamplingRate))); // Untested
 
 
         //DATA PROCESSOR BLOCK
@@ -349,15 +350,15 @@ void core1_main() {
             VerticalScale = position[1]*100;
 
             // printf("Time: %ld us    Overshoot: %ld us\t", (uint32_t)get_absolute_time(), (uint32_t)absolute_time_diff_us(old, get_absolute_time()));
-            for (int i = 0; i < num_enc; i++) {
-                // printf("Enc %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
-                printf("Enc %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
-                // printf("%04ld (%01u)   ", position[i], !buttons[i]);
-                stdio_flush();
-                // printf("Enc %d Pos: %03d    ", i, position_calc[i]);
-            }
-            // printf("VS: %u", VerticalScale);
-            printf("\n");
+            // for (int i = 0; i < num_enc; i++) {
+            //     // printf("Enc %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
+            //     printf("Enc %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
+            //     // printf("%04ld (%01u)   ", position[i], !buttons[i]);
+            //     stdio_flush();
+            //     // printf("Enc %d Pos: %03d    ", i, position_calc[i]);
+            // }
+            // // printf("VS: %u", VerticalScale);
+            // printf("\n");
         }
     }
 }
@@ -369,25 +370,65 @@ void core1_main() {
 //DESC: Example descriptions
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
 void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps) {
+    const uint16_t white = GFX_RGB565(255,255,255);
+    const uint16_t grey = GFX_RGB565(127,127,127);
+    const uint16_t dark_grey = GFX_RGB565(50,50,50);
 
     GFX_clearScreen();
     GFX_setCursor(0, 0);
-    GFX_fillScreen(GFX_RGB565(50,50,50));
+    GFX_fillScreen(dark_grey);
+    GFX_setTextBack(dark_grey);
+    GFX_setTextColor(white);
     
     //value prints
-    GFX_printf("FPS: %.03f\n", fps);
-    GFX_printf("VC1: The Max is %.03f V\n", (VC1_stats.max / 1000.0));
-    GFX_printf("VC1: The Min is %.03f V\n", (VC1_stats.min / 1000.0));
-    GFX_printf("VC2: The Max is %.03f V\n", (VC2_stats.max / 1000.0));
-    GFX_printf("VC2: The Min is %.03f V\n", (VC2_stats.min / 1000.0));
-    GFX_printf("Trigger: The Trigger Voltage is %03f volts\n", (Trigger / 1000.0));
-    if (VS >= 1000*1000) GFX_printf("VS: %.03f kV/div\n", (float)(VS / 1000.0 / 1000.0)); // kV
-    else if (VS >= 1000) GFX_printf("VS: %.03f V/div\n", (float)(VS / 1000.0)); // V
-    else GFX_printf("VS: %.03f mV/div\n", (float)(VS)); // mV
-    GFX_printf("HS: %.03f ms/div\n", (HS / 1000)); // mS
+
+    // Channel 1 Max
+    GFX_printf("Ch. 1 Max: ");
+    if (VC1_stats.max >= 1000) GFX_printf("%.02f V\n", (float)(VC1_stats.max / 1000.0)); // V
+    else GFX_printf("%03.00f mV\n", (float)(VC1_stats.max)); // mV
+    // Channel 1 Min
+    GFX_printf("Ch. 1 Min: ");
+    if (VC1_stats.min >= 1000) GFX_printf("%.02f V\n", (float)(VC1_stats.min / 1000.0)); // V
+    else GFX_printf("%3.00f mV\n", (float)(VC1_stats.min)); // mV
+    // Channel 2 Max
+    GFX_printf("Ch. 2 Max: ");
+    if (VC2_stats.max >= 1000) GFX_printf("%.02f V\n", (float)(VC2_stats.max / 1000.0)); // V
+    else GFX_printf("%3.00f mV\n", (float)(VC2_stats.max)); // mV
+    // Channel 2 Min
+    GFX_printf("Ch. 2 Min: ");
+    if (VC2_stats.min >= 1000) GFX_printf("%.02f V\n", (float)(VC2_stats.min / 1000.0)); // V
+    else GFX_printf("%3.00f mV\n", (float)(VC2_stats.min)); // mV
+    // Trigger
+    GFX_printf("Trigger: ");
+    if (Trigger >= 1000) GFX_printf("%.02f V\n", (float)(Trigger / 1000.0)); // V
+    else GFX_printf("%3.00f mV\n", (float)(Trigger)); // mV
+    // Vertical Scale
+    GFX_printf("Volt. Scale: ");
+    if (VS >= 1000) GFX_printf("%.02f V/div\n", (float)(VS / 1000.0)); // V
+    else GFX_printf("%3.00f mV/div\n", (float)(VS)); // mV
+    // Horizontal Scale
+    GFX_printf("Time Scale: ");
+    if (HS >= 1000) GFX_printf("%.01f ms/div\n", (float)(HS / 1000.0)); // mS
+    else GFX_printf("%3.00f us/div\n", (float)(HS)); // uS
+
+    //voltage markings
+    GFX_drawFastHLine(10, 120, 300, grey);
+    GFX_drawFastHLine(10, 140, 300, grey);
+    GFX_drawFastHLine(10, 160, 300, grey);
+    GFX_drawFastHLine(10, 180, 300, grey);
+    //time markings
+    GFX_drawFastVLine(40, 100, 100, grey);
+    GFX_drawFastVLine(70, 100, 100, grey);
+    GFX_drawFastVLine(100, 100, 100, grey);
+    GFX_drawFastVLine(130, 100, 100, grey);
+    GFX_drawFastVLine(160, 100, 100, grey);
+    GFX_drawFastVLine(190, 100, 100, grey);
+    GFX_drawFastVLine(220, 100, 100, grey);
+    GFX_drawFastVLine(250, 100, 100, grey);
+    GFX_drawFastVLine(280, 100, 100, grey);
 
     // Draw waveforms to disp buffer
-    for (uint32_t i=0; i < NS; i++){
+    for (uint32_t i=0; i < NS && i < DataArray_len; i++){
         // Width in pixels * sample# / number of samples
         const uint32_t x = ((300 * i) / NS) + 10;
         GFX_drawPixel(x, fmaxf(100, (200 - floor(VC1[i] * (20.0/VS)))), GFX_RGB565(255,0,0));
@@ -395,25 +436,10 @@ void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, ui
     }
 
     //box around functions
-    GFX_drawFastHLine(10, 100, 300,GFX_RGB565(255,255,255));
-    GFX_drawFastHLine(10, 200, 300,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(10, 100, 100,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(310, 100, 100,GFX_RGB565(255,255,255));
-    //voltage markings
-    GFX_drawFastHLine(10, 120, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastHLine(10, 140, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastHLine(10, 160, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastHLine(10, 180, 10,GFX_RGB565(255,255,255));
-    //time markings
-    GFX_drawFastVLine(40, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(70, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(100, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(130, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(160, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(190, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(220, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(250, 190, 10,GFX_RGB565(255,255,255));
-    GFX_drawFastVLine(280, 190, 10,GFX_RGB565(255,255,255));
+    GFX_drawFastHLine(10, 100, 300, white);
+    GFX_drawFastHLine(10, 200, 300, white);
+    GFX_drawFastVLine(10, 100, 100, white);
+    GFX_drawFastVLine(310, 100, 100, white);
 
     //SEND ITTTTT!!!
     GFX_flush();
@@ -438,22 +464,22 @@ void DataProcessor(uint16_t* VC1, uint16_t* VC2, uint NS, uint16_t VS, uint16_t 
     int NumTriggersVC2 = 0;
     
     //loop from the start to the end of the arrays and calculate important values
-    for (int j=0; j < NS; j++) {
+    for (int i=0; i < NS && i < DataArray_len; i++) {
         
-        if(VC1[j] > MaxVC1){
-            MaxVC1 = VC1[j];
+        if(VC1[i] > MaxVC1){
+            MaxVC1 = VC1[i];
         }
         
-        if(VC2[j] > MaxVC2){
-            MaxVC2 = VC2[j];
+        if(VC2[i] > MaxVC2){
+            MaxVC2 = VC2[i];
         }
         
-        if(VC1[j] < MinVC1){
-            MinVC1 = VC1[j];
+        if(VC1[i] < MinVC1){
+            MinVC1 = VC1[i];
         }
 
-        if(VC2[j] < MinVC2){
-            MinVC2 = VC2[j];
+        if(VC2[i] < MinVC2){
+            MinVC2 = VC2[i];
         }
     }
 
