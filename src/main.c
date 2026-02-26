@@ -230,9 +230,10 @@ int main() {
                 //decriment to count down to zero
                 TriggerFlag--;
             }else{
+                //check if you are near the trigger voltage(TODO: edit these values as needed)
                 if((DataArray0[i] > (TriggerVoltage - 100)) && (DataArray0[i] < (TriggerVoltage + 100))){
                     //take as many samples as needed
-                    TriggerFlag = NumSamples;
+                    TriggerFlag = NumSamples - 1;
                     //DATA PROCESSOR BLOCK
                     DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
                     //DISPLAY DRIVER BLOCK     
