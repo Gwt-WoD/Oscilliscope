@@ -73,9 +73,11 @@ void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq) {
 }
 
 
-
+void DispDriverFrameSetup();
 void DataProcessor(uint16_t VC1, uint16_t VC2, uint NS, uint16_t VS, uint16_t Trigger);
 void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps, int i);
+void DispDriverFrameFinish(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps, int i);
+
 
 void core1_main();
 
@@ -219,6 +221,10 @@ int main() {
        
         int TriggerFlag = 0;
         int i = 0;
+        
+        //DISPLAY DRIVER BLOCK 
+        DispDriverFrameSetup();
+
         while(i < DataArray_len){
             //if we are still triggering
             if(TriggerFlag > 0){
@@ -242,8 +248,8 @@ int main() {
             }
             i++;
         }
-        //DISPLAY DRIVER BLOCK     
-        DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i);
+        //DISPLAY DRIVER BLOCK    
+        DispDriverFrameFinish(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i);
         
 
         end = time_us_32();
@@ -391,6 +397,36 @@ void core1_main() {
     }
 }
 
+//--------------------------------------------------------------------------------------------------------------------------
+//FUNCTION: DISPLAY DRIVER FRAME SETUP
+//DESC: Takes in two arrays of data and does some math. spits them out on the other side
+
+void DispDriverFrameSetup() {
+    const uint16_t white = GFX_RGB565(255,255,255);
+    const uint16_t grey = GFX_RGB565(127,127,127);
+    const uint16_t dark_grey = GFX_RGB565(50,50,50);
+
+    GFX_setCursor(0, 0);
+    GFX_fillScreen(dark_grey);
+
+
+    //voltage markings
+    GFX_drawFastHLine(10, 120, 300, grey);
+    GFX_drawFastHLine(10, 140, 300, grey);
+    GFX_drawFastHLine(10, 160, 300, grey);
+    GFX_drawFastHLine(10, 180, 300, grey);
+    //time markings
+    GFX_drawFastVLine(40, 100, 100, grey);
+    GFX_drawFastVLine(70, 100, 100, grey);
+    GFX_drawFastVLine(100, 100, 100, grey);
+    GFX_drawFastVLine(130, 100, 100, grey);
+    GFX_drawFastVLine(160, 100, 100, grey);
+    GFX_drawFastVLine(190, 100, 100, grey);
+    GFX_drawFastVLine(220, 100, 100, grey);
+    GFX_drawFastVLine(250, 100, 100, grey);
+    GFX_drawFastVLine(280, 100, 100, grey);
+
+}
 
 
 //--------------------------------------------------------------------------------------------------------------------------
@@ -398,16 +434,26 @@ void core1_main() {
 //DESC: Example descriptions
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
 void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps, int i) {
+    // Draw waveforms to disp buffer
+    // Width in pixels * sample# / number of samples
+    const uint32_t x = ((300 * i) / NS) + 10;
+    GFX_drawPixel(x, fmaxf(100, (200 - floor(VC1 * (20.0/VS)))), GFX_RGB565(255,0,0));
+    GFX_drawPixel(x, fmaxf(100, (200 - floor(VC2 * (20.0/VS)))), GFX_RGB565(0,0,255));
+
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+//FUNCTION: DISPLAY DRIVER FRAME SETUP
+//DESC: Takes in two arrays of data and does some math. spits them out on the other side
+
+void DispDriverFrameFinish(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps, int i) {
     const uint16_t white = GFX_RGB565(255,255,255);
     const uint16_t grey = GFX_RGB565(127,127,127);
     const uint16_t dark_grey = GFX_RGB565(50,50,50);
-
-    GFX_clearScreen();
-    GFX_setCursor(0, 0);
-    GFX_fillScreen(dark_grey);
+    
+    
     GFX_setTextBack(dark_grey);
     GFX_setTextColor(white);
-    
     //value prints
 
     // Channel 1 Max
@@ -439,28 +485,6 @@ void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint
     if (HS >= 1000) GFX_printf("%.01f ms/div\n", (float)(HS / 1000.0)); // mS
     else GFX_printf("%3.00f us/div\n", (float)(HS)); // uS
 
-    //voltage markings
-    GFX_drawFastHLine(10, 120, 300, grey);
-    GFX_drawFastHLine(10, 140, 300, grey);
-    GFX_drawFastHLine(10, 160, 300, grey);
-    GFX_drawFastHLine(10, 180, 300, grey);
-    //time markings
-    GFX_drawFastVLine(40, 100, 100, grey);
-    GFX_drawFastVLine(70, 100, 100, grey);
-    GFX_drawFastVLine(100, 100, 100, grey);
-    GFX_drawFastVLine(130, 100, 100, grey);
-    GFX_drawFastVLine(160, 100, 100, grey);
-    GFX_drawFastVLine(190, 100, 100, grey);
-    GFX_drawFastVLine(220, 100, 100, grey);
-    GFX_drawFastVLine(250, 100, 100, grey);
-    GFX_drawFastVLine(280, 100, 100, grey);
-
-    // Draw waveforms to disp buffer
-    // Width in pixels * sample# / number of samples
-    const uint32_t x = ((300 * i) / NS) + 10;
-    GFX_drawPixel(x, fmaxf(100, (200 - floor(VC1 * (20.0/VS)))), GFX_RGB565(255,0,0));
-    GFX_drawPixel(x, fmaxf(100, (200 - floor(VC2 * (20.0/VS)))), GFX_RGB565(0,0,255));
-
     //box around functions
     GFX_drawFastHLine(10, 100, 300, white);
     GFX_drawFastHLine(10, 200, 300, white);
@@ -471,6 +495,7 @@ void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint
     GFX_flush();
 
 }
+
 
 //--------------------------------------------------------------------------------------------------------------------------
 //FUNCTION: DATA PROCESSOR
