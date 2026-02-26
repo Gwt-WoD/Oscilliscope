@@ -221,7 +221,7 @@ int main() {
        
         int TriggerFlag = 0;
         int i = 0;
-        
+
         //DISPLAY DRIVER BLOCK 
         DispDriverFrameSetup();
 
@@ -503,24 +503,22 @@ void DispDriverFrameFinish(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
 void DataProcessor(uint16_t VC1, uint16_t VC2, uint NS, uint16_t VS, uint16_t Trigger) {
     
-    //loop from the start to the end of the arrays and calculate important values
-    for (int i=0; i < NS && i < DataArray_len; i++) {
-        
-        if(VC1 > VC1_stats.max){
-            VC1_stats.max = VC1;
-        }
-        
-        if(VC2 > VC2_stats.max){
-            VC2_stats.max = VC2;
-        }
-        
-        if(VC1 < VC1_stats.min){
-            VC1_stats.min = VC1;
-        }
 
-        if(VC2 < VC2_stats.min){
-            VC2_stats.min = VC2;
-        }
+        
+    if(VC1 > VC1_stats.max){
+        VC1_stats.max = VC1;
+    }
+    
+    if(VC2 > VC2_stats.max){
+        VC2_stats.max = VC2;
+    }
+    
+    if(VC1 < VC1_stats.min){
+        VC1_stats.min = VC1;
+    }
+
+    if(VC2 < VC2_stats.min){
+        VC2_stats.min = VC2;
     }
 
 
