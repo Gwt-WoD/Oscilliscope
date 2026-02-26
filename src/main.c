@@ -75,7 +75,7 @@ void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq) {
 
 
 void DataProcessor(uint16_t VC1, uint16_t VC2, uint NS, uint16_t VS, uint16_t Trigger);
-void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps);
+void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps, int i);
 
 void core1_main();
 
@@ -217,23 +217,32 @@ int main() {
         VC2_stats.max = 0;
         VC2_stats.min = UINT16_MAX;
        
-        bool TriggerFlag = false;
+        int TriggerFlag = 0;
         int i = 0;
-        while(i < NumSamples){
-            if(TriggerFlag){
+        while(i < DataArray_len){
+            //if we are still triggering
+            if(TriggerFlag > 0){
                 //DATA PROCESSOR BLOCK
                 DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
+                //DISPLAY DRIVER BLOCK     
+                DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i);
+                
+                //decriment to count down to zero
+                TriggerFlag--;
             }else{
                 if((DataArray0[i] > (TriggerVoltage - 100)) && (DataArray0[i] < (TriggerVoltage + 100))){
-                    TriggerFlag = true;
+                    //take as many samples as needed
+                    TriggerFlag = NumSamples;
                     //DATA PROCESSOR BLOCK
                     DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
+                    //DISPLAY DRIVER BLOCK     
+                    DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i);
                 }
             }
             i++;
         }
         //DISPLAY DRIVER BLOCK     
-        DispDriver(DataArray0, DataArray1, NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps);
+        DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i);
         
 
         end = time_us_32();
@@ -387,7 +396,7 @@ void core1_main() {
 //FUNCTION: DISPLAY DRIVER
 //DESC: Example descriptions
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
-void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps) {
+void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps, int i) {
     const uint16_t white = GFX_RGB565(255,255,255);
     const uint16_t grey = GFX_RGB565(127,127,127);
     const uint16_t dark_grey = GFX_RGB565(50,50,50);
@@ -446,12 +455,10 @@ void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, ui
     GFX_drawFastVLine(280, 100, 100, grey);
 
     // Draw waveforms to disp buffer
-    for (uint32_t i=0; i < NS && i < DataArray_len; i++){
-        // Width in pixels * sample# / number of samples
-        const uint32_t x = ((300 * i) / NS) + 10;
-        GFX_drawPixel(x, fmaxf(100, (200 - floor(VC1[i] * (20.0/VS)))), GFX_RGB565(255,0,0));
-        GFX_drawPixel(x, fmaxf(100, (200 - floor(VC2[i] * (20.0/VS)))), GFX_RGB565(0,0,255));
-    }
+    // Width in pixels * sample# / number of samples
+    const uint32_t x = ((300 * i) / NS) + 10;
+    GFX_drawPixel(x, fmaxf(100, (200 - floor(VC1 * (20.0/VS)))), GFX_RGB565(255,0,0));
+    GFX_drawPixel(x, fmaxf(100, (200 - floor(VC2 * (20.0/VS)))), GFX_RGB565(0,0,255));
 
     //box around functions
     GFX_drawFastHLine(10, 100, 300, white);
