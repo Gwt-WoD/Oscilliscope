@@ -74,7 +74,7 @@ void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq) {
 
 
 
-void DataProcessor(uint16_t* VC1, uint16_t* VC2, uint NS, uint16_t VS, uint16_t Trigger);
+void DataProcessor(uint16_t VC1, uint16_t VC2, uint NS, uint16_t VS, uint16_t Trigger);
 void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, uint16_t Trigger, float fps);
 
 void core1_main();
@@ -211,9 +211,27 @@ int main() {
         // NumSamples = fminf(DataArray_len, (HorizontalScale / (1000*1000 / SamplingRate))); // Untested
 
 
-        //DATA PROCESSOR BLOCK
-        DataProcessor(DataArray0, DataArray1, NumSamples, VerticalScale, TriggerVoltage);
+        VC1_stats.max = 0;
+        VC1_stats.min = UINT16_MAX;
 
+        VC2_stats.max = 0;
+        VC2_stats.min = UINT16_MAX;
+       
+        bool TriggerFlag = false;
+        int i = 0;
+        while(i < NumSamples){
+            if(TriggerFlag){
+                //DATA PROCESSOR BLOCK
+                DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
+            }else{
+                if((DataArray0[i] > (TriggerVoltage - 100)) && (DataArray0[i] < (TriggerVoltage + 100))){
+                    TriggerFlag = true;
+                    //DATA PROCESSOR BLOCK
+                    DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
+                }
+            }
+            i++;
+        }
         //DISPLAY DRIVER BLOCK     
         DispDriver(DataArray0, DataArray1, NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps);
         
@@ -450,47 +468,27 @@ void DispDriver(uint16_t* VC1, uint16_t* VC2, uint NS, float HS, uint16_t VS, ui
 //FUNCTION: DATA PROCESSOR
 //DESC: Takes in two arrays of data and does some math. spits them out on the other side
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
-void DataProcessor(uint16_t* VC1, uint16_t* VC2, uint NS, uint16_t VS, uint16_t Trigger) {
-    //VC1 Variables
-    uint16_t MinVC1 = UINT16_MAX;
-    uint16_t MaxVC1 = 0;
-    bool TriggerFlagVC1 = 0;
-    int NumTriggersVC1 = 0;
-    
-    //VC2 Variables
-    uint16_t MinVC2 = UINT16_MAX;
-    uint16_t MaxVC2 = 0;
-    bool TriggerFlagVC2 = 0;
-    int NumTriggersVC2 = 0;
+void DataProcessor(uint16_t VC1, uint16_t VC2, uint NS, uint16_t VS, uint16_t Trigger) {
     
     //loop from the start to the end of the arrays and calculate important values
     for (int i=0; i < NS && i < DataArray_len; i++) {
         
-        if(VC1[i] > MaxVC1){
-            MaxVC1 = VC1[i];
+        if(VC1 > VC1_stats.max){
+            VC1_stats.max = VC1;
         }
         
-        if(VC2[i] > MaxVC2){
-            MaxVC2 = VC2[i];
+        if(VC2 > VC2_stats.max){
+            VC2_stats.max = VC2;
         }
         
-        if(VC1[i] < MinVC1){
-            MinVC1 = VC1[i];
+        if(VC1 < VC1_stats.min){
+            VC1_stats.min = VC1;
         }
 
-        if(VC2[i] < MinVC2){
-            MinVC2 = VC2[i];
+        if(VC2 < VC2_stats.min){
+            VC2_stats.min = VC2;
         }
     }
-
-
-    VC1_stats.max = MaxVC1;
-    VC1_stats.min = MinVC1;
-    VC1_stats.NumTriggers = NumTriggersVC1;
-
-    VC2_stats.max = MaxVC2;
-    VC2_stats.min = MinVC2;
-    VC2_stats.NumTriggers = NumTriggersVC2;
 
 
     // //Use the last couple of slots for important values
