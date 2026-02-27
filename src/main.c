@@ -219,36 +219,28 @@ int main() {
         VC2_stats.max = 0;
         VC2_stats.min = UINT16_MAX;
        
-        int TriggerFlag = 0;
+        bool TriggerFlag = false;
         int i = 0;
-        int TriggerLocation = 0;
+        int TriggerLocation = DataArray_len;
 
         //DISPLAY DRIVER BLOCK 
         DispDriverFrameSetup();
 
-        while(i < DataArray_len){
+        while((i < DataArray_len) && (i < (NumSamples + TriggerLocation))){
+            
+            if(i > 0 && !TriggerFlag){
+                if(((DataArray0[i - 1] < TriggerVoltage) && (DataArray0[i] > TriggerVoltage)) || ((DataArray0[i - 1] > TriggerVoltage) && (DataArray0[i] < TriggerVoltage))){
+                    //take as many samples as needed
+                    TriggerFlag = true;
+                    TriggerLocation = i;
+                }
+            }
             //if we are still triggering
-            if(TriggerFlag > 0){
+            if(TriggerFlag){
                 //DATA PROCESSOR BLOCK
                 DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
                 //DISPLAY DRIVER BLOCK     
                 DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i - TriggerLocation);
-                
-                //decriment to count down to zero
-                TriggerFlag--;
-            }else{
-                //check if you are near the trigger voltage(TODO: edit these values as needed)
-                if(i > 0){
-                    if(((DataArray0[i - 1] < TriggerVoltage) && (DataArray0[i] > TriggerVoltage)) || ((DataArray0[i - 1] > TriggerVoltage) && (DataArray0[i] < TriggerVoltage))){
-                        //take as many samples as needed
-                        TriggerFlag = NumSamples - 1;
-                        TriggerLocation = i;
-                        //DATA PROCESSOR BLOCK
-                        DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
-                        //DISPLAY DRIVER BLOCK     
-                        DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i - TriggerLocation);
-                    }
-                }
             }
             i++;
         }
