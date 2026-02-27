@@ -221,6 +221,7 @@ int main() {
        
         int TriggerFlag = 0;
         int i = 0;
+        int TriggerLocation = 0;
 
         //DISPLAY DRIVER BLOCK 
         DispDriverFrameSetup();
@@ -231,19 +232,22 @@ int main() {
                 //DATA PROCESSOR BLOCK
                 DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
                 //DISPLAY DRIVER BLOCK     
-                DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i);
+                DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i - TriggerLocation);
                 
                 //decriment to count down to zero
                 TriggerFlag--;
             }else{
                 //check if you are near the trigger voltage(TODO: edit these values as needed)
-                if((DataArray0[i] > (TriggerVoltage - 100)) && (DataArray0[i] < (TriggerVoltage + 100))){
-                    //take as many samples as needed
-                    TriggerFlag = NumSamples - 1;
-                    //DATA PROCESSOR BLOCK
-                    DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
-                    //DISPLAY DRIVER BLOCK     
-                    DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i);
+                if(i > 0){
+                    if(((DataArray0[i - 1] < TriggerVoltage) && (DataArray0[i] > TriggerVoltage)) || ((DataArray0[i - 1] > TriggerVoltage) && (DataArray0[i] < TriggerVoltage))){
+                        //take as many samples as needed
+                        TriggerFlag = NumSamples - 1;
+                        TriggerLocation = i;
+                        //DATA PROCESSOR BLOCK
+                        DataProcessor(DataArray0[i], DataArray1[i], NumSamples, VerticalScale, TriggerVoltage);
+                        //DISPLAY DRIVER BLOCK     
+                        DispDriver(DataArray0[i], DataArray1[i], NumSamples, HorizontalScale, VerticalScale, TriggerVoltage, fps, i - TriggerLocation);
+                    }
                 }
             }
             i++;
@@ -439,6 +443,8 @@ void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint
     const uint32_t x = ((300 * i) / NS) + 10;
     GFX_drawPixel(x, fmaxf(100, (200 - floor(VC1 * (20.0/VS)))), GFX_RGB565(255,0,0));
     GFX_drawPixel(x, fmaxf(100, (200 - floor(VC2 * (20.0/VS)))), GFX_RGB565(0,0,255));
+    //Trigger line (yellow)
+    GFX_drawFastHLine(10, Trigger, fmaxf(100, 200 - floor(Trigger * (20.0/VS))), GFX_RGB565(255,255,0));
 
 }
 
