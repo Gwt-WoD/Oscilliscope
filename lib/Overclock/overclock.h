@@ -49,7 +49,9 @@ enum OverclockPresetNum {
 	OC_FREQ_200,
 	OC_FREQ_250,
 	OC_FREQ_260,
-	OC_FREQ_270 // WARNING: Requires 1.20V - Do at your own risk!
+	OC_FREQ_270, // WARNING: Requires 1.20V - Do at your own risk!
+	OC_FREQ_270_1_25V, // WARNING: Requires 1.25V - Do at your own risk!
+	OC_FREQ_270_1_30V, // WARNING: Requires 1.25V - Do at your own risk!
 };
 
 const OverclockConfig_t OC_PRESETS[] = {
@@ -58,7 +60,9 @@ const OverclockConfig_t OC_PRESETS[] = {
 	{200000, VREG_VOLTAGE_1_05},
 	{250000, VREG_VOLTAGE_1_10},
 	{260000, VREG_VOLTAGE_1_15},
-	{270000, VREG_VOLTAGE_1_20} // The flash can only reach speeds of up to 260MHz-270MHz
+	{270000, VREG_VOLTAGE_1_20}, // The flash can only reach speeds of up to 260MHz-270MHz
+	{270000, VREG_VOLTAGE_1_25}, // The flash can only reach speeds of up to 260MHz-270MHz
+	{270000, VREG_VOLTAGE_1_30}, // The flash can only reach speeds of up to 260MHz-270MHz
 };
 
 
