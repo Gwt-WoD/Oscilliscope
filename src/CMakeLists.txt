@@ -7,11 +7,11 @@ add_executable(Oscilloscope
 	# Add more c files here...
 )
 
+set_property(TARGET Oscilloscope APPEND_STRING PROPERTY LINK_FLAGS "-Wl,--print-memory-usage")
+
 pico_set_program_name(Oscilloscope "Oscilloscope")
 pico_set_program_version(Oscilloscope "0.1")
 
-# Generate PIO header
-pico_generate_pio_header(Oscilloscope ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(Oscilloscope 1)
@@ -29,10 +29,11 @@ target_include_directories(Oscilloscope PRIVATE
 target_link_libraries(Oscilloscope
 	# Pico
 	pico_multicore
+	pico_rand
 	# Pico Hardware
 	hardware_spi
-	hardware_pio
 	hardware_dma
+	# hardware_timer
 	# ADC
 	# ADS704x
 	ADS704x_DMA
@@ -44,5 +45,6 @@ target_link_libraries(Oscilloscope
 	# Utility
 	Overclock
 )
+
 
 pico_add_extra_outputs(Oscilloscope)

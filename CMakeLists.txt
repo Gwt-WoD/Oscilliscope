@@ -31,7 +31,9 @@ include(pico_sdk_import.cmake)
 
 project(Oscilloscope C CXX ASM)
 
-set(USE_DMA)
+add_definitions(
+	-DUSE_DMA
+)
 
 # Include Libraries
 add_subdirectory(lib/Overclock)
