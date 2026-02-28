@@ -275,7 +275,7 @@ const uint16_t yellow = (green | red);
 
 //--------------------------------------------------------------------------------------------------------------------------
 //FUNCTION: DISPLAY DRIVER FRAME SETUP
-//DESC: Takes in two arrays of data and does some math. spits them out on the other side
+//DESC: Sets up the layouts of the frame
 
 void DispDriverFrameSetup() {
 
@@ -306,7 +306,7 @@ void DispDriverFrameSetup() {
 
 //--------------------------------------------------------------------------------------------------------------------------
 //FUNCTION: DISPLAY DRIVER
-//DESC: Example descriptions
+//DESC: Graphs two waveforms on top of the layout set in the frame setup function
 //voltage channel 1, voltage channel 2, number of samples, horizontal scale(us), vertical scale(mV), trigger voltage(mV)
 void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint16_t i) {
     // Draw waveforms to disp buffer
@@ -329,8 +329,8 @@ void DispDriver(uint16_t VC1, uint16_t VC2, uint NS, float HS, uint16_t VS, uint
 
 
 //--------------------------------------------------------------------------------------------------------------------------
-//FUNCTION: DISPLAY DRIVER FRAME SETUP
-//DESC: Takes in two arrays of data and does some math. spits them out on the other side
+//FUNCTION: DISPLAY DRIVER FRAME FINISH
+//DESC: finishes off the frame by displaying the calculated values and sends it to the display
 
 void DispDriverFrameFinish(float HS, uint16_t VS, uint16_t Trigger, float fps) {
 
