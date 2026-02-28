@@ -79,23 +79,25 @@ int main() {
 
     
     // Display SPI initialisation
-    printf("Initialising Display SPI...\n");
-    // spi_init(DISP_SPI, 16*1000*1000); // 16 MHz
-    // uint32_t baud = spi_init(DISP_SPI, 65*1000*1000); // 65 MHz
-    uint32_t baud = spi_init(DISP_SPI, 67*1000*1000); // 67 MHz @ 270MHz sys
-    printf("SPI Baud set to %u MHz\n", baud/(1000*1000));
-    gpio_set_function(DISP_PIN_RST,  GPIO_FUNC_SPI);
-    gpio_set_function(DISP_PIN_CS,   GPIO_FUNC_SIO); // Uhhh... I think this should be GPIO_FUNC_SPI... -Michael
-    gpio_set_function(DISP_PIN_SCK,  GPIO_FUNC_SPI);
-    gpio_set_function(DISP_PIN_MOSI, GPIO_FUNC_SPI);
-    gpio_set_function(DISP_PIN_DC,   GPIO_FUNC_SPI); // And this should be GPIO_FUNC_SIO! -Michael
+    // printf("Initialising Display SPI...\n");
+    // // spi_init(DISP_SPI, 16*1000*1000); // 16 MHz
+    // // uint32_t baud = spi_init(DISP_SPI, 65*1000*1000); // 65 MHz
+    // uint32_t baud = spi_init(DISP_SPI, 67*1000*1000); // 67 MHz @ 270MHz sys
+    // printf("SPI Baud set to %u MHz\n", baud/(1000*1000));
+    // gpio_set_function(DISP_PIN_RST,  GPIO_FUNC_SPI);
+    // gpio_set_function(DISP_PIN_CS,   GPIO_FUNC_SIO); // Uhhh... I think this should be GPIO_FUNC_SPI... -Michael
+    // gpio_set_function(DISP_PIN_SCK,  GPIO_FUNC_SPI);
+    // gpio_set_function(DISP_PIN_MOSI, GPIO_FUNC_SPI);
+    // gpio_set_function(DISP_PIN_DC,   GPIO_FUNC_SPI); // And this should be GPIO_FUNC_SIO! -Michael
     
-    // Chip select is active-low. Reset to high state.
-    gpio_set_dir(DISP_PIN_CS, GPIO_OUT);
-    gpio_put(DISP_PIN_CS, 1);
+    // // Chip select is active-low. Reset to high state.
+    // gpio_set_dir(DISP_PIN_CS, GPIO_OUT);
+    // gpio_put(DISP_PIN_CS, 1);
 
     // Display initialisation
     printf("Configuring LCD...\n");
+    // LCD_setPins(DISP_PIN_DC, DISP_PIN_CS, DISP_PIN_RST, DISP_PIN_SCK, DISP_PIN_MOSI);
+    // LCD_setSPIperiph(DISP_SPI);
     LCD_initDisplay();
     LCD_setRotation(1);
     // GFX_createFramebuf();
