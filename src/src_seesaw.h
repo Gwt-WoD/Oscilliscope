@@ -192,9 +192,9 @@ void seesaw_run() {
 		// TriggerVoltage = encoders[2].position*100;
 
 		// printf("Time: %ld us    Overshoot: %ld us\t", (uint32_t)get_absolute_time(), (uint32_t)absolute_time_diff_us(old, get_absolute_time()));
-		// for (int i = 0; i < num_enc; i++) {
+		// for (int i = 0; i < enc_cnt; i++) {
 		//     // printf("Enc %d: Pos Calc = %03d, Pos = %03d, Delta = %03d    ", i, position_calc[i], position[i], delta[i]);
-		//     printf("Enc %d Pos: %04ld Btn: %d    ", i, position[i], !buttons[i]);
+		//     printf("Enc %d Pos: %04ld Btn: %d    ", i, encoders[i].position, !encoders[i].btn);
 		//     // printf("%04ld (%01u)   ", position[i], !buttons[i]);
 		//     stdio_flush();
 		//     // printf("Enc %d Pos: %03d    ", i, position_calc[i]);

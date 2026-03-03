@@ -33,8 +33,8 @@
 #define ADC_SPI       spi1
 #define ADC_PIN_SCK   14
 #define ADC_PIN_MISO  12
-#define ADC_PIN_CS0   13
-#define ADC_PIN_CS1   25
+#define ADC_PIN_CS0   9
+#define ADC_PIN_CS1   13
 
 #define EXT_TRIG      6
 #define TRIG_0        3
@@ -47,12 +47,12 @@
 
 
 // Shared I2C Pins
-// #define I2C_PORT      i2c0
-// #define I2C_SDA       24
-// #define I2C_SCL       25
 #define I2C_PORT      i2c0
-#define I2C_SDA       4
-#define I2C_SCL       5
+#define I2C_SDA       24
+#define I2C_SCL       25
+// #define I2C_PORT      i2c0
+// #define I2C_SDA       4
+// #define I2C_SCL       5
 
 
 // TODO: Add More

@@ -65,14 +65,17 @@ void core1_main();
 
 
 int main() {
+    gpio_init(USBBOOT_BTN);
+    gpio_set_dir(USBBOOT_BTN, GPIO_IN);
     // Initialize serial output
     stdio_init_all();
     // Looking for USB connection. Waiting until serial is opened
-    // while (!stdio_usb_connected()) {
-    //     sleep_ms(50);
-    // }
-    // sleep_ms(50);
-    // printf("Serial connected!\n");
+    while (!stdio_usb_connected()) {
+        sleep_ms(50);
+        if (!gpio_get(USBBOOT_BTN)) break;
+    }
+    sleep_ms(50);
+    printf("Serial connected!\n");
 
     // Overclock (with verbose output)
     overclock(true);
@@ -96,8 +99,8 @@ int main() {
 
     // Display initialisation
     printf("Configuring LCD...\n");
-    // LCD_setPins(DISP_PIN_DC, DISP_PIN_CS, DISP_PIN_RST, DISP_PIN_SCK, DISP_PIN_MOSI);
-    // LCD_setSPIperiph(DISP_SPI);
+    LCD_setPins(DISP_PIN_DC, DISP_PIN_CS, DISP_PIN_RST, DISP_PIN_SCK, DISP_PIN_MOSI);
+    LCD_setSPIperiph(DISP_SPI);
     LCD_initDisplay();
     LCD_setRotation(1);
     // GFX_createFramebuf();
