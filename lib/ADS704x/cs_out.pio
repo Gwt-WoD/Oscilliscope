@@ -1,0 +1,11 @@
+.program cs0_out
+.wrap_target
+    ; pull block
+    out pins, 1
+.wrap
+
+.program cs1_out
+.wrap_target
+    ; pull block
+    out pins, 1
+.wrap

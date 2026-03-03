@@ -137,7 +137,11 @@ ads7043_inst_t* ads7043_new(spi_inst_t *spi, uint8_t cs_pin, uint8_t sck_pin, ui
 
 void ads7043_init(ads7043_inst_t *inst);
 
+void ads7043_selfcal(ads7043_inst_t *inst);
+
 uint16_t ads7043_read_raw(ads7043_inst_t *inst);
+
+void _test_raw16_to_float(uint16_t raw);
 
 // uint8_t ads7043_config_dma(ads7043_inst_t *inst, uint32_t burst_length, uint32_t burst_interval_us);
 

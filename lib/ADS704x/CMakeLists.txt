@@ -45,3 +45,32 @@ target_link_libraries(ADS704x_DMA INTERFACE
 	hardware_dma
 	hardware_irq
 )
+
+#=====================================================================================
+
+pico_sdk_init()
+
+# Define an INTERFACE library (recommended for Pico SDK)
+add_library(ADS704x_PIO INTERFACE)
+
+pico_generate_pio_header(ADS704x_PIO
+    ${CMAKE_CURRENT_LIST_DIR}/ads704x_pio.pio
+)
+
+# Specify the source files for the library
+target_sources(ADS704x_PIO INTERFACE
+	${CMAKE_CURRENT_LIST_DIR}/ads704x_pio.c
+)
+
+# Specify the include directories (PUBLIC makes headers available to consumers)
+target_include_directories(ADS704x_PIO INTERFACE
+	${CMAKE_CURRENT_LIST_DIR}
+)
+
+# Link any necessary Pico SDK libraries (e.g., pico_stdlib) that your library needs
+target_link_libraries(ADS704x_PIO INTERFACE
+	pico_stdlib
+	hardware_pio
+	hardware_dma
+	hardware_irq
+)

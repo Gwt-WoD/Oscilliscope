@@ -27,27 +27,50 @@
 #include "ads7043.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 
+ads7043_inst_t* ads7043_new(spi_inst_t *spi, uint8_t cs_pin, uint8_t sck_pin, uint8_t miso_pin, uint32_t baudrate) {
+	ads7043_inst_t* inst = (ads7043_inst_t*)malloc(sizeof(ads7043_inst_t));
+	if (inst == NULL) {
+		printf("Error allocating memory for ADS7043 instance\n");
+		return NULL;
+	}
 
+	inst->spi = spi;
+	inst->cs_pin = cs_pin;
+	inst->sck_pin = sck_pin;
+	inst->miso_pin = miso_pin;
+	inst->spi_baudrate = baudrate;
+
+	return inst;
+}
 
 // ADS7043 initialization
 void ads7043_init(ads7043_inst_t *inst) {
 	// Initialize SPI
-	spi_init(inst->spi, inst->spi_baudrate);
+	uint32_t baud = spi_init(inst->spi, inst->spi_baudrate);
+	printf("SPI Baud set to %u KHz\n", baud/(1000));
 
 	// Set SPI format: 8 bits per transfer, CPOL=0, CPHA=0, MSB first
 	// spi_set_format(inst->spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-	spi_set_format(inst->spi, 14, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+	// spi_set_format(inst->spi, 14, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+	spi_set_format(inst->spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
 
 	// Initialize GPIO pins for SPI
 	gpio_set_function(inst->sck_pin, GPIO_FUNC_SPI);
 	gpio_set_function(inst->miso_pin, GPIO_FUNC_SPI);
+	// gpio_set_function(inst->cs_pin, GPIO_FUNC_SPI);
+
+	gpio_init(inst->cs_pin);
+	gpio_set_dir(inst->cs_pin, GPIO_OUT);
+	gpio_put(inst->cs_pin, 1); // Deassert CS
+
 }
 
 void ads7043_selfcal(ads7043_inst_t *inst) {
@@ -56,9 +79,12 @@ void ads7043_selfcal(ads7043_inst_t *inst) {
 	 * operation if at least 32 SCLK falling edges are
 	 * provided in one serial transfer frame.
 	 */
+	gpio_put(inst->cs_pin, false);
 	// Add one extra byte transfer to ensure at least 32 SCLK falling edges for calibration?
 	uint8_t zero_buffer[4] = {0}; // 8 * 4 = 32 SCLK falling edges
 	spi_write_blocking(inst->spi, zero_buffer, 4);
+	sleep_us(ADS7043_MIN_ACQUISITION_TIME_NS);
+	gpio_put(inst->cs_pin, true);
 }
 
 
@@ -85,13 +111,20 @@ uint16_t ads7043_read_raw(ads7043_inst_t *inst) {
 	// Combine the two bytes into a single 16-bit result
 	result = ((uint16_t)buffer[0] << 8) | buffer[1];
 
-	return result & ADS7043_DATA_MASK; // Mask to get valid data bits
+	// return result & ADS7043_DATA_MASK; // Mask to get valid data bits
+	return result;
 }
 
 void _test_raw16_to_float(uint16_t raw) {
 	// Raw value * 2x attenuation, then scale to voltage based on 12-bit resolution and 2.8V reference
-	float voltage1 = (raw / (float)(1 << (12 - 2))) * 2.8f;
-	float voltage2 = (raw / (float)(1 << 12)) * 2.8f; // Assuming 3.3V reference
-	printf("Raw: %04X, Voltage: %.3f V\n", raw, voltage1);
+	// float voltage1 = (raw / (float)(1 << (12 - 2))) * 2.8f;
+	// float voltage2 = (raw / (float)(1 << 12)) * 2.8f; // Assuming 3.3V reference
+	float voltage1 = ((((raw & ADS7043_DATA_MASK) >> 2) / (float)((1 << 12)-1)) * 2.8f)*2.0f;
+	// Print raw binary value and calculated voltage
+	printf("Raw binary format: 0b");
+	for (int i = 15; i >= 0; i--) {
+		printf("%d", (raw >> i) & 1);
+	}
+	printf(" Raw: %04X, Voltage: %.3f V\n", raw, voltage1);
 }
 
