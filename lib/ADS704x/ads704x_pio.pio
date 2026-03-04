@@ -16,14 +16,11 @@ calibrate_cleanup:
     nop[7]
     nop[4]
 
-    ; patched per SM at init time
-    ; irq 0
+    ; irq set 0
 
 .wrap_target
 
-    ; patched per SM at init time
     ; wait 1 irq 1   ; wait until SM1 completes
-    ; irq clear 1
 
 data_transfer_setup:
     set pins, 0    [1]  ; CS LOW +1 clock cycle delay
@@ -41,7 +38,7 @@ data_transfer:
 cleanup:    ; autopush should transfer data.
     set pins, 1 [3]; CS HIGH + 1 clock cycle delay
 
-    ; irq 0
+    ; irq set 0
 .wrap
 
 
@@ -51,8 +48,7 @@ cleanup:    ; autopush should transfer data.
 ; Note: autopush must be enabled with the bit resolution value (12).
 ; Note: clock division must be 1.0f (assuming a 125MHz clock) for the ADS7049.
 
-    wait 1 irq 0   ; wait until SM0 completes
-    irq clear 0
+    ; wait 1 irq 0   ; wait until SM0 completes
 
 calibrate:
     set pins, 0         ; CS LOW
@@ -66,12 +62,11 @@ calibrate_cleanup:
     nop[7]
     nop[4]
 
-    irq 1
+    ; irq set 1
 
 .wrap_target
 
-    wait 1 irq 0   ; wait until SM0 completes
-    irq clear 0
+    ; wait 1 irq 0   ; wait until SM0 completes
 
 data_transfer_setup:
     set pins, 0    [1]  ; CS LOW +1 clock cycle delay
@@ -89,7 +84,7 @@ data_transfer:
 cleanup:    ; autopush should transfer data.
     set pins, 1 [3]; CS HIGH + 1 clock cycle delay
 
-    irq 1
+    ; irq set 1
 .wrap
 
 
@@ -101,13 +96,15 @@ cleanup:    ; autopush should transfer data.
 void setup_pio_ads704x(PIO pio, uint sm, pio_sm_config *c, uint program_offset,
                                      uint cs_pin, uint sck_pin, uint miso_pin)
 {
+    uint data_bits = 12;
+
     // Setup which commands apply to which pins.
     sm_config_set_set_pins(c, cs_pin, 1);   // CS pin controlled with SET cmds.
     sm_config_set_in_pins(c, miso_pin);     // MISO pin read by IN cmd.
     sm_config_set_sideset_pins(c, sck_pin); // SCK pin controlled with SIDESET cmds.
     // Setup for MSb-first (shift left), enable auto push, autopush threshold = nbits)
-    uint data_bits = 12;
     sm_config_set_in_shift(c, false, true, data_bits);
+
     // float clk_div = (data_bits == 8) ? 2.5f : 1.0f;
     // float clk_div = (data_bits == 8) ? 5.0f : 2.0f; // For 250MHz
     // float clk_div = (data_bits == 8) ? 5.4f : 2.16f; // For 270MHz
@@ -115,7 +112,7 @@ void setup_pio_ads704x(PIO pio, uint sm, pio_sm_config *c, uint program_offset,
     float clk_div = (data_bits == 8) ? 10.8f : 4.32f; // For 270MHz 1Msps
     // float clk_div = 2.0f * ((data_bits == 8) ? 2.5f : 1.0f) * ((float)clock_get_hz(clk_sys) / 125.0f*1000*1000);
     printf("PIO clock divider: %f\n", clk_div);
-    sm_config_set_clkdiv(c, clk_div); // No clock division.
+    sm_config_set_clkdiv(c, clk_div);
 
     // Set specific GPIO pins to be controlled by pio.
     pio_gpio_init(pio, sck_pin);

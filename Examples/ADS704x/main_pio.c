@@ -18,7 +18,7 @@
 #include "overclock.h"
 
 
-#define ADC_SPI       spi1
+// #define ADC_SPI       spi1
 #define ADC_PIN_SCK   14
 #define ADC_PIN_MISO  12
 #define ADC_PIN_CS0   9
@@ -65,32 +65,63 @@ int main() {
         printf("Overclocking successful! New frequency: %d kHz\n", ret);
     }
 
-    ads704x_cfg_t cfg_0, cfg_1;
-
-    ads704x_init(&cfg_0, pio0, ADC_PIN_CS0, ADC_PIN_SCK, ADC_PIN_MISO, 0);
-    // ads704x_init(&cfg_1, pio0, ADC_PIN_CS1, ADC_PIN_SCK, ADC_PIN_MISO, 1);
-
-    ads704x_setup_dma_stream_to_memory(&cfg_0, test_buff_0, 1024);
-    // ads704x_setup_dma_stream_to_memory(&cfg_1, test_buff_1, 1024);
-
-    ads704x_start(&cfg_0);
-    // ads704x_start(&cfg_1);
-
-    uint32_t dma_chan_0 = ads704x_get_dma_channel(&cfg_0);
-    // uint32_t dma_chan_1 = ads704x_get_dma_channel(&cfg_1);
-
-    dma_channel_wait_for_finish_blocking(dma_chan_0);
-    // dma_channel_wait_for_finish_blocking(dma_chan_1);
-
     for (int i = 0; i < 1024; i++) {
-        float voltage0 = ( test_buff_0[i] / (float)((1<<12)-1) ) * 2.8f * 2.0f;
-        // float voltage1 = ( test_buff_1[i] / (float)((1<<12)-1) ) * 2.8f * 2.0f;
-        // printf("Sample %d: ADC0 = %u (%.3f V), ADC1 = %u (%.3f V)\n", i, test_buff_0[i], voltage0, test_buff_1[i], voltage1);
-        printf("Sample %d: %u (%.3f V)\n", i, test_buff_0[i], voltage0);
+        test_buff_0[i] = 0;
+        test_buff_1[i] = 0;
     }
 
+    ads704x_cfg_t cfg_0, cfg_1;
+
+    // ads704x_init(&cfg_1, pio0, ADC_PIN_CS1, ADC_PIN_SCK, ADC_PIN_MISO, 1);
+    ads704x_init(&cfg_0, pio0, ADC_PIN_CS0, ADC_PIN_SCK, ADC_PIN_MISO, 0);
+    ads704x_init(&cfg_1, pio1, ADC_PIN_CS1, ADC_PIN_SCK, ADC_PIN_MISO, 0);
+    // ads704x_init(&cfg_1, pio1, ADC_PIN_CS1, ADC_PIN_SCK, ADC_PIN_MISO, 1);
+    printf("ADC pio init complete!\n");
+
+    // ads704x_setup_dma_stream_to_memory(&cfg_0, test_buff_0, 1024);
+    // ads704x_setup_dma_stream_to_memory(&cfg_1, test_buff_1, 1024);
+    // ads704x_setup_dma_stream_to_memory(&cfg_0, test_buff_0, 1);
+    // ads704x_setup_dma_stream_to_memory(&cfg_1, test_buff_1, 1);
+
+    // ads704x_start(&cfg_0);
+    // ads704x_start(&cfg_1);
+    // ads704x_start(&cfg_0);
+
+    uint32_t dma_chan_0 = ads704x_get_dma_channel(&cfg_0);
+    uint32_t dma_chan_1 = ads704x_get_dma_channel(&cfg_1);
+
+    // sleep_us(1000);
+
+    // dma_channel_wait_for_finish_blocking(dma_chan_0);
+    // dma_channel_wait_for_finish_blocking(dma_chan_1);
+
+    // for (int i = 0; i < 1024; i++) {
+    //     float voltage0 = ( test_buff_0[i] / (float)((1<<12)-1) ) * 2.8f * 2.0f;
+    //     float voltage1 = ( test_buff_1[i] / (float)((1<<12)-1) ) * 2.8f * 2.0f;
+    //     printf("Sample %d: ADC0 = %u (%.3f V), ADC1 = %u (%.3f V)\n", i, test_buff_0[i], voltage0, test_buff_1[i], voltage1);
+    //     // printf("Sample %d: %u (%.3f V)\n", i, test_buff_0[i], voltage0);
+    // }
+
     while (1) {
-        sleep_ms(1000);
+        ads704x_start(&cfg_0);
+        ads704x_setup_dma_stream_to_memory(&cfg_0, test_buff_0, 1024);
+        dma_channel_wait_for_finish_blocking(dma_chan_0);
+        ads704x_stop(&cfg_0);
+
+        // sleep_us(1000);
+
+        ads704x_start(&cfg_1);
+        ads704x_setup_dma_stream_to_memory(&cfg_1, test_buff_1, 1024);
+        dma_channel_wait_for_finish_blocking(dma_chan_1);
+        ads704x_stop(&cfg_1);
+
+        for (int i = 0; i < 1024; i++) {
+            float voltage0 = ( test_buff_0[i] / (float)((1<<12)-1) ) * 2.8f * 2.0f;
+            float voltage1 = ( test_buff_1[i] / (float)((1<<12)-1) ) * 2.8f * 2.0f;
+            printf("Sample %d: ADC0 = 0x%x (%.3f V), ADC1 = 0x%x (%.3f V)\n", i, test_buff_0[i], voltage0, test_buff_1[i], voltage1);
+            // printf("Sample %d: %u (%.3f V)\n", i, test_buff_0[i], voltage0);
+        }
+        break;
     }
 }
 

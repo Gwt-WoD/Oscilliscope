@@ -59,6 +59,7 @@ void ads704x_setup_dma_stream_to_memory(ads704x_cfg_t *cfg, volatile uint16_t* s
 // void ads704x_setup_dma_stream_to_memory(ads704x_cfg_t *cfg, volatile uint16_t* starting_address, size_t sample_count, uint32_t sample_rate);
 // void ads704x_setup_dma_stream_to_memory_with_interrupt(ads704x_cfg_t *cfg, volatile uint16_t* starting_address, size_t sample_count, int dma_irq_source, irq_handler_t handler_func);
 void ads704x_start(ads704x_cfg_t* cfg);
+void ads704x_stop(ads704x_cfg_t* cfg);
 // void ads704x_reset(ads704x_cfg_t *cfg);
 
 uint32_t ads704x_get_dma_channel(ads704x_cfg_t *cfg);
