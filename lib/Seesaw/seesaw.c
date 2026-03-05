@@ -19,9 +19,7 @@ static int seesaw_i2c_write(Seesaw_t ss, uint8_t *data, size_t len) {
 	// i2c_write_blocking returns number of bytes written, or PICO_ERROR_GENERIC
 	// if address not acknowledged, no device present.
 	// int ret = i2c_write_blocking(ss.i2c_inst, ss.i2c_addr, data, len, false);
-	uint32_t timeout = I2C_TIMEOUT_US(ss.baud);
-	// uint32_t timeout = 1000;
-	int ret = i2c_write_timeout_per_char_us(ss.i2c_inst, ss.i2c_addr, data, len, false, timeout);
+	int ret = i2c_write_timeout_per_char_us(ss.i2c_inst, ss.i2c_addr, data, len, false, I2C_TIMEOUT_US(ss.baud));
 	if (ret != len) {
 		if (ret == PICO_ERROR_GENERIC) {
 			printf("[seesaw] I2C write error: device not acknowledged\n");
@@ -70,6 +68,7 @@ static int seesaw_i2c_read(Seesaw_t ss, uint8_t *cmd, size_t cmdlen, uint8_t *bu
 	// sleep_us(500); // Min delay for ADC
 	// sleep_us(350); // Lets be safe
 	sleep_us(1000); // Test
+	// sleep_us(5000); // Test
 	ret = i2c_read_timeout_per_char_us(ss.i2c_inst, ss.i2c_addr, buf, buflen, false, I2C_TIMEOUT_US(ss.baud));
 	if (ret != buflen) {
 		if (ret == PICO_ERROR_GENERIC) {

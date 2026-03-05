@@ -90,7 +90,7 @@ void seesaw_setup() {
 	printf("Initialising I2C...\n");
 	// Returns actual baudrate which may differ from requested baud
 	// ss.baud = i2c_init(I2C_PORT, 400*1000); // 400kHz
-	ss.baud = i2c_init(I2C_PORT, 100*1000); // 400kHz
+	ss.baud = i2c_init(I2C_PORT, 100*1000); // 100kHz
 	/**
 	 * NOTE: We may need stronger pull-ups for higher baud rates (2.2k for 400kHz)
 	 */

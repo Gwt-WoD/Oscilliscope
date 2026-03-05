@@ -106,9 +106,10 @@ void setup_pio_ads704x(PIO pio, uint sm, pio_sm_config *c, uint program_offset,
     sm_config_set_in_shift(c, false, true, data_bits);
 
     // float clk_div = (data_bits == 8) ? 2.5f : 1.0f;
-    // float clk_div = (data_bits == 8) ? 5.0f : 2.0f; // For 250MHz
-    // float clk_div = (data_bits == 8) ? 5.4f : 2.16f; // For 270MHz
+    // float clk_div = (data_bits == 8) ? 5.0f : 2.0f; // For 250MHz 2Msps
+    // float clk_div = (data_bits == 8) ? 5.4f : 2.16f; // For 270MHz 2Msps
     // float clk_div = (data_bits == 8) ? 10.0f : 4.0f; // For 250MHz 1Msps
+    // float clk_div = (data_bits == 8) ? 10.4f : 4.16f; // For 260MHz 1Msps
     float clk_div = (data_bits == 8) ? 10.8f : 4.32f; // For 270MHz 1Msps
     // float clk_div = 2.0f * ((data_bits == 8) ? 2.5f : 1.0f) * ((float)clock_get_hz(clk_sys) / 125.0f*1000*1000);
     printf("PIO clock divider: %f\n", clk_div);

@@ -9,7 +9,7 @@
 #include <hardware/pio.h>
 
 
-void ads704x_init(ads704x_cfg_t *cfg, PIO pio, uint8_t cs_pin, uint8_t sck_pin, uint8_t miso_pin, uint8_t channel) {
+void ads704x_init(ads704x_cfg_t *cfg, PIO pio, uint8_t cs_pin, uint8_t sck_pin, uint8_t miso_pin, uint32_t sample_rate, uint8_t channel) {
     cfg->spi.sck = sck_pin;
     cfg->spi.miso = miso_pin;
     cfg->spi.cs = cs_pin;
@@ -19,8 +19,12 @@ void ads704x_init(ads704x_cfg_t *cfg, PIO pio, uint8_t cs_pin, uint8_t sck_pin, 
     // cfg->dma.ctrl_chan = dma_claim_unused_channel(true);
 
     cfg->dma.timer = dma_claim_unused_timer(true);
-    cfg->sample_rate = 200*1000; // Default sample rate
-    dma_timer_set_fraction(cfg->dma.timer, 1, clock_get_hz(clk_sys) / (float)cfg->sample_rate);
+    // cfg->sample_rate = 200*1000; // Default sample rate
+    cfg->sample_rate = sample_rate;
+    // (270*1000*1000) / (200*1000) = 1350
+    uint16_t dma_timer_div = clock_get_hz(clk_sys) / cfg->sample_rate;
+    printf("Configuring DMA timer with divider: %u\n", dma_timer_div);
+    dma_timer_set_fraction(cfg->dma.timer, 1, dma_timer_div);
 
     cfg->pio.inst = pio;
     if (cfg->channel)
@@ -102,9 +106,9 @@ void _setup_dma_stream_to_memory(ads704x_cfg_t *cfg, volatile uint16_t* buff, si
     channel_config_set_write_increment(&cfg->dma.data_conf, true);
     // channel_config_set_irq_quiet(&cfg->dma.data_conf, !trigger_interrupt);
     // Pace data according to pio providing data.
-    channel_config_set_dreq(&cfg->dma.data_conf, pio_get_dreq(cfg->pio.inst, cfg->pio.sm, false));
+    // channel_config_set_dreq(&cfg->dma.data_conf, pio_get_dreq(cfg->pio.inst, cfg->pio.sm, false));
     // Pace data according to pio providing data.
-    // channel_config_set_dreq(&cfg->dma.data_conf, dma_get_timer_dreq(cfg->dma.timer));
+    channel_config_set_dreq(&cfg->dma.data_conf, dma_get_timer_dreq(cfg->dma.timer));
     // channel_config_set_chain_to(&cfg->dma.data_conf, cfg->dma.ctrl_chan);
     channel_config_set_enable(&cfg->dma.data_conf, true);
     // Apply data_chan configuration.
@@ -164,12 +168,22 @@ void ads704x_start(ads704x_cfg_t* cfg) {
     // pio_sm_set_sideset_pins(cfg->pio.inst, cfg->pio.sm, cfg->spi.sck); // SCK pin controlled with SIDESET cmds.
 
     pio_gpio_init(cfg->pio.inst, cfg->spi.sck); // Reclaim control of SCK pin
-    pio_gpio_init(cfg->pio.inst, cfg->spi.miso); // Reclaim control of SCK pin
+    pio_gpio_init(cfg->pio.inst, cfg->spi.miso); // Reclaim control of MISO pin
     // gpio_set_function(cfg->spi.sck, GPIO_FUNC_PIO0 + (cfg->pio.inst == pio1));
     // gpio_set_function(cfg->spi.miso, GPIO_FUNC_PIO0 + (cfg->pio.inst == pio1));
     // gpio_set_function(cfg->spi.sck, PIO_FUNCSEL_NUM(pio, pin)cfg->pio.inst == pio1));
     // gpio_set_function(cfg->spi.miso, GPIO_FUNC_PIO0 + (cfg->pio.inst == pio1));
-    // 
+
+
+    // Stop the state machine before reconfiguring it
+    ads704x_stop(cfg); 
+
+    // Reset the clock to a phase of zero
+    pio_sm_clkdiv_restart(cfg->pio.inst, cfg->pio.sm);
+    // Move the program counter back to the beginning of the program
+    pio_sm_exec(cfg->pio.inst, cfg->pio.sm, pio_encode_jmp(cfg->pio.offset));
+    // Clear FIFOs to remove any junk data from previous runs
+    pio_sm_clear_fifos(cfg->pio.inst, cfg->pio.sm);
 
     // launch the PIO program.
     pio_sm_set_enabled(cfg->pio.inst, cfg->pio.sm, true);
@@ -178,12 +192,13 @@ void ads704x_start(ads704x_cfg_t* cfg) {
 
 void ads704x_stop(ads704x_cfg_t* cfg) {
     // pio_sm_set_sideset_pins(cfg->pio.inst, cfg->pio.sm, 8); // Release control of SCK pin. (usr_int_1)
-
+    
     pio_sm_set_enabled(cfg->pio.inst, cfg->pio.sm, false);
     // pio_sm_clear_fifos(cfg->pio.inst, cfg->pio.sm);
     // pio_sm_restart(cfg->pio.inst, cfg->pio.sm);
     // pio_sm_clkdiv_restart(cfg->pio.inst, cfg->pio.sm);
     // pio_sm_exec(cfg->pio.inst, cfg->pio.sm, pio_encode_jmp(cfg->pio.offset));
+    // pio_sm_clear_fifos(cfg->pio.inst, cfg->pio.sm);
     // pio_sm_set_enabled(cfg->pio.inst, cfg->pio.sm, true);
 
     // pio_sm_set_sideset_pins(cfg->pio.sm_cfg, cfg->spi.sck); // SCK pin controlled with SIDESET cmds.

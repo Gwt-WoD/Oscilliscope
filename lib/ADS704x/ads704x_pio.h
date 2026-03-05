@@ -54,7 +54,7 @@ typedef struct {
 	// handler_func_t frame_complete_handler;
 } ads704x_cfg_t;
 
-void ads704x_init(ads704x_cfg_t *cfg, PIO pio, uint8_t cs_pin, uint8_t sck_pin, uint8_t miso_pin, uint8_t channel);
+void ads704x_init(ads704x_cfg_t *cfg, PIO pio, uint8_t cs_pin, uint8_t sck_pin, uint8_t miso_pin, uint32_t sample_rate, uint8_t channel);
 void ads704x_setup_dma_stream_to_memory(ads704x_cfg_t *cfg, volatile uint16_t* starting_address, size_t sample_count);
 // void ads704x_setup_dma_stream_to_memory(ads704x_cfg_t *cfg, volatile uint16_t* starting_address, size_t sample_count, uint32_t sample_rate);
 // void ads704x_setup_dma_stream_to_memory_with_interrupt(ads704x_cfg_t *cfg, volatile uint16_t* starting_address, size_t sample_count, int dma_irq_source, irq_handler_t handler_func);

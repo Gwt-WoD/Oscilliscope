@@ -36,7 +36,8 @@ target_link_libraries(Oscilloscope
 	# hardware_timer
 	# ADC
 	# ADS704x
-	ADS704x_DMA
+	# ADS704x_DMA
+	ADS704x_PIO
 	# Display
 	ili9341
 	gfx
