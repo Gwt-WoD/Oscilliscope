@@ -364,11 +364,11 @@ int main() {
 
 void core1_main() {
 
-    DynamicValue_t values[3] = {
-        {.value = 100, .reset = 100, .ranges = DecadeRange, .min = 10},
-        {.value = 1000, .reset = 1000, .ranges = DecadeRange, .min = 100},
-        {.value = 2000, .reset = 2000, .ranges = DecadeRange, .min = 100},
-    };
+    // DynamicValue_t values[3] = {
+    //     {.value = 100, .reset = 100, .ranges = DecadeRange, .min = 10},
+    //     {.value = 1000, .reset = 1000, .ranges = DecadeRange, .min = 100},
+    //     {.value = 2000, .reset = 2000, .ranges = DecadeRange, .min = 100},
+    // };
 
 
     gpio_init(AFE_RST);
@@ -388,8 +388,6 @@ void core1_main() {
     dev_mcp4728_set(ss0.i2c_inst, 3, 0x0FFF / 2);
     // dev_mcp4728_set(ss0.i2c_inst, 2, 0x0FFF);
     // dev_mcp4728_set(ss0.i2c_inst, 3, 0x0FFF);
-
-    // Display NEOPIXEL
 
     // Signal to core 0 that we're done with initialization and ready to go
     multicore_fifo_push_blocking(1);
