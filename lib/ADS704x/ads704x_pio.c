@@ -27,6 +27,7 @@ void ads704x_init(ads704x_cfg_t *cfg, PIO pio, uint8_t cs_pin, uint8_t sck_pin, 
     dma_timer_set_fraction(cfg->dma.timer, 1, dma_timer_div);
 
     cfg->pio.inst = pio;
+    // cfg->pio.offset = pio_add_program(cfg->pio.inst, &ads704x_0_program);
     if (cfg->channel)
         cfg->pio.offset = pio_add_program(cfg->pio.inst, &ads704x_1_program);
     else

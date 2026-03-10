@@ -32,7 +32,7 @@ include(pico_sdk_import.cmake)
 project(Oscilloscope C CXX ASM)
 
 add_definitions(
-	-DUSE_DMA
+    -DUSE_DMA
 )
 
 # Include Libraries

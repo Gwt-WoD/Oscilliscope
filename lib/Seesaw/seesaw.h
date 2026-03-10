@@ -34,6 +34,10 @@ typedef struct {
 	// uint8_t pin_scl;
 } Seesaw_t;
 
+void seesaw_set_bus_reset_recovery_callback(void (*fn)(void));
+
+int seesaw_swrst(Seesaw_t ss);
+
 
 // Seesaw GPIO functions
 int seesaw_gpio_pin_mode(Seesaw_t ss, uint8_t pin, uint8_t pinmode); // Works??
@@ -41,6 +45,7 @@ int seesaw_gpio_digital_write(Seesaw_t ss, uint8_t pin, bool value); // Works
 int seesaw_gpio_digital_read(Seesaw_t ss, uint8_t pin, bool *value); // Works
 int seesaw_gpio_enable_interrupt(Seesaw_t ss, uint8_t pin); // Works??
 int seesaw_gpio_disable_interrupt(Seesaw_t ss, uint8_t pin); // Works??
+int seesaw_gpio_get_interupts(Seesaw_t ss, uint32_t *value);
 
 int seesaw_gpio_digital_read_bulk(Seesaw_t ss, uint32_t pins, uint32_t *value); // Works??
 int seesaw_gpio_digital_write_bulk(Seesaw_t ss, uint32_t pins, uint8_t value); // Works??
@@ -53,13 +58,15 @@ int seesaw_encoder_disable_interrupt(Seesaw_t ss, uint8_t encoder_num);
 int seesaw_encoder_set_position(Seesaw_t ss, uint8_t encoder_num, int32_t position); // Works
 
 // Seesaw Neopixel
+int seesaw_neopixel_set_pin(Seesaw_t ss, uint8_t pin);
+int seesaw_neopixel_set_len(Seesaw_t ss, uint16_t n);
 int seesaw_neopixel_set_pixel(Seesaw_t ss, uint16_t n, uint32_t color);
 int seesaw_neopixel_show(Seesaw_t ss);
 int seesaw_neopixel_set_brightness(Seesaw_t ss, uint8_t brightness);
 
 // Utility: Convert RGB to packed 24-bit color
 static inline uint32_t seesaw_color(uint8_t r, uint8_t g, uint8_t b) {
-	return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+	return ((uint32_t)g << 16) | ((uint32_t)r << 8) | b;
 }
 
 
@@ -130,6 +137,7 @@ enum SeesawPin {
 #define SEESAW_PIN_1 SEESAW_PIN_PA5
 #define SEESAW_PIN_2 SEESAW_PIN_PA6
 #define SEESAW_PIN_3 SEESAW_PIN_PA7
+#define SEESAW_PIN_4 SEESAW_PIN_PB7 // ???
 #define SEESAW_PIN_5 SEESAW_PIN_PB6
 #define SEESAW_PIN_6 SEESAW_PIN_PB5
 #define SEESAW_PIN_7 SEESAW_PIN_PB4

@@ -58,4 +58,9 @@
 // TODO: Add More
 
 
+#define FALLING_EDGE (1<<0)
+#define RISING_EDGE (1<<1)
+#define BOTH_EDGES (FALLING_EDGE | RISING_EDGE)
+
+
 #endif // PINS_H
