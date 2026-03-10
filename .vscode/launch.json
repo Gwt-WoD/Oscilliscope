@@ -8,7 +8,7 @@
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
-            "serverpath": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd.exe",
+            "serverpath": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd",
             "gdbPath": "${command:raspberry-pi-pico.getGDBPath}",
             "device": "${command:raspberry-pi-pico.getChipUppercase}",
             "configFiles": [
@@ -24,7 +24,8 @@
                 "load \"${command:raspberry-pi-pico.launchTargetPath}\""
             ],
             "openOCDLaunchCommands": [
-                "adapter speed 5000"
+                "adapter speed 5000",
+                "set USE_CORE 0"
             ]
         },
         {
